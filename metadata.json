@@ -1,0 +1,6 @@
+{
+  "name": "Serendipia Studio Finance Manager",
+  "description": "A financial management application for Serendipia Studio to track income, expenses, and balance adjustments with detailed summaries and currency conversion.",
+  "requestFramePermissions": [],
+  "prompt": ""
+}
