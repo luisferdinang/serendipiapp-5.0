@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Limpieza de Datos Migrados</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+        }
+        textarea {
+            width: 100%;
+            height: 400px;
+            font-family: monospace;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #dff0d8;
+            color: #3c763d;
+        }
+        .error {
+            background-color: #f2dede;
+            color: #a94442;
+        }
+        .info {
+            background-color: #d9edf7;
+            color: #31708f;
+        }
+    </style>
+</head>
+<body>
+    <h1>Limpieza de Datos Migrados</h1>
+    
+    <div class="container">
+        <div style="flex: 1;">
+            <h2>Datos de Entrada (JSON)</h2>
+            <textarea id="inputData" placeholder="Pega aquí el contenido de db.json"></textarea>
+        </div>
+        <div style="flex: 1;">
+            <h2>Datos Limpiados (JSON)</h2>
+            <textarea id="outputData" readonly></textarea>
+        </div>
+    </div>
+    
+    <div>
+        <button id="processBtn">Procesar Datos</button>
+        <button id="downloadBtn" disabled>Descargar Archivo</button>
+        <button id="copyBtn" disabled>Copiar al Portapapeles</button>
+    </div>
+    
+    <div id="status" class="status"></div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const inputData = document.getElementById('inputData');
+            const outputData = document.getElementById('outputData');
+            const processBtn = document.getElementById('processBtn');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const copyBtn = document.getElementById('copyBtn');
+            const statusDiv = document.getElementById('status');
+            
+            let cleanedData = [];
+            
+            // Mapeo de tipos de transacción
+            const typeMap = {
+                'venta': 'income',
+                'gasto': 'expense',
+                'ajuste': 'adjustment',
+                'ingreso': 'income',
+                'egreso': 'expense'
+            };
+            
+            // Mapeo de métodos de pago
+            const paymentMethodMap = {
+                'banco': 'PAGO_MOVIL_BS',
+                'efectivo': 'EFECTIVO_BS',
+                'usd': 'EFECTIVO_USD',
+                'usdt': 'USDT',
+                'crypto': 'USDT',
+                'cripto': 'USDT'
+            };
+            
+            function showStatus(message, type = 'info') {
+                statusDiv.textContent = message;
+                statusDiv.className = 'status ' + type;
+            }
+            
+            function processData() {
+                try {
+                    const inputText = inputData.value.trim();
+                    if (!inputText) {
+                        showStatus('Por favor, pega los datos JSON de entrada', 'error');
+                        return;
+                    }
+                    
+                    const transactions = JSON.parse(inputText);
+                    if (!Array.isArray(transactions)) {
+                        showStatus('El archivo debe contener un array de transacciones', 'error');
+                        return;
+                    }
+                    
+                    showStatus(`Procesando ${transactions.length} transacciones...`, 'info');
+                    
+                    cleanedData = [];
+                    const errors = [];
+                    
+                    transactions.forEach((tx, index) => {
+                        try {
+                            // Determinar el tipo de transacción
+                            const typeKey = (tx.type || '').toLowerCase();
+                            const type = typeMap[typeKey] || 'expense';
+                            
+                            // Calcular el monto total
+                            let amount = 0;
+                            if (tx.income > 0) {
+                                amount = tx.income;
+                            } else if (tx.expense > 0) {
+                                amount = tx.expense;
+                            } else if (tx.unitPrice !== null && tx.quantity !== null) {
+                                amount = tx.unitPrice * tx.quantity;
+                            }
+                            
+                            // Procesar métodos de pago
+                            const paymentMethods = [];
+                            
+                            // Procesar pagos directos
+                            if (tx.payment && typeof tx.payment === 'object') {
+                                Object.entries(tx.payment).forEach(([key, value]) => {
+                                    const paymentAmount = Number(value) || 0;
+                                    if (paymentAmount > 0) {
+                                        const normalizedKey = key.toLowerCase().trim();
+                                        const method = paymentMethodMap[normalizedKey] || 'EFECTIVO_BS';
+                                        paymentMethods.push({
+                                            method,
+                                            amount: paymentAmount
+                                        });
+                                    }
+                                });
+                            }
+                            
+                            // Si no hay métodos de pago pero hay un monto, crear uno por defecto
+                            if (paymentMethods.length === 0 && amount > 0) {
+                                paymentMethods.push({
+                                    method: 'EFECTIVO_BS',
+                                    amount: amount
+                                });
+                            }
+                            
+                            // Determinar la moneda basada en los métodos de pago
+                            const currency = paymentMethods.length > 0 && 
+                                          (paymentMethods[0].method.endsWith('_USD') || 
+                                           paymentMethods[0].method === 'USDT') ? 'USD' : 'BS';
+                            
+                            // Crear transacción limpia
+                            const cleanedTx = {
+                                id: tx.id || `migrated-${Date.now()}-${index}`,
+                                date: tx.date ? new Date(tx.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+                                type,
+                                description: tx.description || 'Transacción sin descripción',
+                                quantity: tx.quantity || 1,
+                                unitPrice: tx.unitPrice || amount,
+                                amount,
+                                currency,
+                                paymentMethods
+                            };
+                            
+                            cleanedData.push(cleanedTx);
+                            
+                        } catch (error) {
+                            console.error(`Error procesando transacción ${tx.id}:`, error);
+                            errors.push({
+                                id: tx.id,
+                                description: tx.description,
+                                error: error.message
+                            });
+                        }
+                    });
+                    
+                    // Mostrar resultados
+                    outputData.value = JSON.stringify(cleanedData, null, 2);
+                    
+                    if (errors.length > 0) {
+                        showStatus(`Procesamiento completado con ${errors.length} errores. Ver la consola para más detalles.`, 'error');
+                        console.error('Errores encontrados:', errors);
+                    } else {
+                        showStatus(`Procesamiento completado exitosamente. ${cleanedData.length} transacciones procesadas.`, 'success');
+                    }
+                    
+                    // Habilitar botones
+                    downloadBtn.disabled = false;
+                    copyBtn.disabled = false;
+                    
+                } catch (error) {
+                    showStatus(`Error: ${error.message}`, 'error');
+                    console.error('Error procesando datos:', error);
+                }
+            }
+            
+            function downloadFile() {
+                if (!cleanedData.length) {
+                    showStatus('No hay datos para descargar', 'error');
+                    return;
+                }
+                
+                const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(cleanedData, null, 2));
+                const downloadAnchorNode = document.createElement('a');
+                downloadAnchorNode.setAttribute('href', dataStr);
+                downloadAnchorNode.setAttribute('download', 'cleaned-transactions.json');
+                document.body.appendChild(downloadAnchorNode);
+                downloadAnchorNode.click();
+                downloadAnchorNode.remove();
+                
+                showStatus('Archivo descargado exitosamente', 'success');
+            }
+            
+            function copyToClipboard() {
+                outputData.select();
+                document.execCommand('copy');
+                
+                const selection = window.getSelection();
+                if (selection) {
+                    selection.removeAllRanges();
+                }
+                
+                showStatus('Datos copiados al portapapeles', 'success');
+            }
+            
+            // Event listeners
+            processBtn.addEventListener('click', processData);
+            downloadBtn.addEventListener('click', downloadFile);
+            copyBtn.addEventListener('click', copyToClipboard);
+            
+            // Cargar datos de ejemplo al hacer doble clic en el área de entrada
+            inputData.addEventListener('dblclick', function() {
+                if (!inputData.value.trim()) {
+                    inputData.value = `[
+  {
+    "date": "2025-06-08T04:00:00.000Z",
+    "type": "venta",
+    "description": "Ejemplo de venta",
+    "quantity": 2,
+    "unitPrice": 10.5,
+    "income": 21,
+    "expense": 0,
+    "payment": {
+      "efectivo": 21,
+      "banco": 0
+    },
+    "id": "ejemplo-1"
+  },
+  {
+    "date": "2025-06-08T04:00:00.000Z",
+    "type": "gasto",
+    "description": "Ejemplo de gasto",
+    "quantity": 1,
+    "unitPrice": 15.75,
+    "income": 0,
+    "expense": 15.75,
+    "payment": {
+      "efectivo": 15.75,
+      "usd": 0
+    },
+    "id": "ejemplo-2"
+  }
+]`;
+                }
+            });
+        });
+    </script>
+</body>
+</html>

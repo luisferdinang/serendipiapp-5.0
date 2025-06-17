@@ -20,6 +20,9 @@ dist-ssr
 # Archivos locales
 *.local
 
+# Archivos de credenciales
+serviceAccountKey.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

@@ -55,35 +55,45 @@ const calculateFinancialSummary = (transactions: Transaction[], exchangeRate: nu
   // Procesar transacciones del mes
   currentMonthTransactions.forEach(tx => {
     const amount = tx.amount || 0;
+    const isAdjustment = tx.type === TransactionType.ADJUSTMENT;
+    const isIncome = tx.type === TransactionType.INCOME;
+    const isExpense = tx.type === TransactionType.EXPENSE;
     
     if (tx.currency === Currency.BS) {
-      if (tx.type === TransactionType.INCOME) {
+      // Para ajustes, no sumamos a ingresos ni gastos, solo actualizamos los saldos
+      if (isIncome) {
         summary.bs.periodIncome += amount;
-      } else if (tx.type === TransactionType.EXPENSE) {
+      } else if (isExpense) {
         summary.bs.periodExpenses += amount;
       }
       
       // Actualizar saldos según método de pago
       tx.paymentMethods.forEach(pm => {
         if (pm.method === PaymentMethod.EFECTIVO_BS) {
-          summary.bs.cashBalance += (tx.type === TransactionType.INCOME ? 1 : -1) * pm.amount;
+          // Para ajustes, el monto ya viene con el signo correcto
+          const adjustmentAmount = isAdjustment ? amount : (isIncome ? pm.amount : -pm.amount);
+          summary.bs.cashBalance += isAdjustment ? adjustmentAmount : (isIncome ? pm.amount : -pm.amount);
         } else if (pm.method === PaymentMethod.PAGO_MOVIL_BS) {
-          summary.bs.bankBalance += (tx.type === TransactionType.INCOME ? 1 : -1) * pm.amount;
+          const adjustmentAmount = isAdjustment ? amount : (isIncome ? pm.amount : -pm.amount);
+          summary.bs.bankBalance += isAdjustment ? adjustmentAmount : (isIncome ? pm.amount : -pm.amount);
         }
       });
     } else if (tx.currency === Currency.USD) {
-      if (tx.type === TransactionType.INCOME) {
+      // Para ajustes, no sumamos a ingresos ni gastos, solo actualizamos los saldos
+      if (isIncome) {
         summary.usd.periodIncome += amount;
-      } else if (tx.type === TransactionType.EXPENSE) {
+      } else if (isExpense) {
         summary.usd.periodExpenses += amount;
       }
       
       // Actualizar saldos según método de pago
       tx.paymentMethods.forEach(pm => {
         if (pm.method === PaymentMethod.EFECTIVO_USD) {
-          summary.usd.cashBalance += (tx.type === TransactionType.INCOME ? 1 : -1) * pm.amount;
+          const adjustmentAmount = isAdjustment ? amount : (isIncome ? pm.amount : -pm.amount);
+          summary.usd.cashBalance += isAdjustment ? adjustmentAmount : (isIncome ? pm.amount : -pm.amount);
         } else if (pm.method === PaymentMethod.USDT) {
-          summary.usd.usdtBalance += (tx.type === TransactionType.INCOME ? 1 : -1) * pm.amount;
+          const adjustmentAmount = isAdjustment ? amount : (isIncome ? pm.amount : -pm.amount);
+          summary.usd.usdtBalance += isAdjustment ? adjustmentAmount : (isIncome ? pm.amount : -pm.amount);
         }
       });
     }
@@ -164,9 +174,12 @@ export const useFirebaseTransactions = (): UseFirebaseTransactionsReturn => {
   });
 
   const loadInitialData = useCallback(async () => {
-    console.log('loadInitialData - Usuario actual:', currentUser?.uid);
+    console.log('🔍 [useFirebaseTransactions] loadInitialData - Usuario actual:', currentUser?.uid, 'Email:', currentUser?.email);
     if (!currentUser) {
-      console.log('loadInitialData - No hay usuario autenticado');
+      const errorMsg = 'No hay usuario autenticado';
+      console.error('❌ [useFirebaseTransactions]', errorMsg);
+      setError(errorMsg);
+      setIsLoading(false);
       return;
     }
     
@@ -174,19 +187,38 @@ export const useFirebaseTransactions = (): UseFirebaseTransactionsReturn => {
     setError(null);
     
     try {
-      console.log('Cargando transacciones y tasa de cambio...');
+      console.log('🔄 [useFirebaseTransactions] Cargando transacciones y tasa de cambio...');
+      
+      // Verificar autenticación
+      const user = currentUser;
+      if (!user.uid) {
+        throw new Error('El usuario no tiene un UID válido');
+      }
+      
+      console.log('🔑 [useFirebaseTransactions] UID del usuario:', user.uid);
+      
+      // Cargar datos en paralelo
       const [storedTransactions, storedRate] = await Promise.all([
-        firebaseService.getTransactions(currentUser.uid),
-        firebaseService.getExchangeRate()
+        firebaseService.getTransactions(user.uid).catch(err => {
+          console.error('❌ [useFirebaseTransactions] Error al cargar transacciones:', err);
+          return []; // Retornar array vacío en caso de error
+        }),
+        firebaseService.getExchangeRate().catch(err => {
+          console.error('❌ [useFirebaseTransactions] Error al cargar tasa de cambio:', err);
+          return INITIAL_EXCHANGE_RATE; // Usar valor por defecto en caso de error
+        })
       ]);
       
-      console.log('Transacciones cargadas:', storedTransactions);
-      console.log('Tasa de cambio cargada:', storedRate);
+      console.log('✅ [useFirebaseTransactions] Transacciones cargadas:', storedTransactions.length);
+      console.log('💰 [useFirebaseTransactions] Tasa de cambio cargada:', storedRate);
       
-      setTransactions(storedTransactions);
-      if (storedRate !== null) {
-        setExchangeRateState(storedRate);
-      }
+      // Actualizar estado
+      setTransactions(storedTransactions || []);
+      setExchangeRateState(storedRate || INITIAL_EXCHANGE_RATE);
+      
+      // Calcular resumen financiero
+      const summary = calculateFinancialSummary(storedTransactions || [], storedRate || INITIAL_EXCHANGE_RATE);
+      setFinancialSummary(summary);
     } catch (e) {
       setError("Error al cargar datos. Intenta de nuevo.");
       console.error(e);

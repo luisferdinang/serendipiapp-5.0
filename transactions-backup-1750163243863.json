@@ -1,0 +1,123 @@
+[
+  {
+    "date": "2025-06-08T04:00:00.000Z",
+    "type": "ajuste",
+    "description": "efectivo bs",
+    "amount": 0,
+    "currency": "BOB",
+    "paymentMethod": "cash",
+    "category": "Ajuste",
+    "createdAt": "2025-06-17T12:27:23.865Z",
+    "updatedAt": "2025-06-17T12:27:23.865Z"
+  },
+  {
+    "date": "2025-06-08T04:00:00.000Z",
+    "type": "ajuste",
+    "description": "usd",
+    "amount": 30,
+    "currency": "USDT",
+    "paymentMethod": "cash",
+    "category": "Ajuste",
+    "createdAt": "2025-06-17T12:27:23.865Z",
+    "updatedAt": "2025-06-17T12:27:23.865Z"
+  },
+  {
+    "date": "2025-06-08T04:00:00.000Z",
+    "type": "ajuste",
+    "description": "usdt",
+    "amount": 0,
+    "currency": "BOB",
+    "paymentMethod": "cash",
+    "category": "Ajuste",
+    "createdAt": "2025-06-17T12:27:23.865Z",
+    "updatedAt": "2025-06-17T12:27:23.865Z"
+  },
+  {
+    "date": "2025-06-09T04:00:00.000Z",
+    "type": "venta",
+    "description": "namdom - impresion a color",
+    "amount": 20,
+    "currency": "BOB",
+    "paymentMethod": "bank",
+    "category": "Impresiones",
+    "createdAt": "2025-06-17T12:27:23.866Z",
+    "updatedAt": "2025-06-17T12:27:23.866Z"
+  },
+  {
+    "date": "2025-06-09T04:00:00.000Z",
+    "type": "venta",
+    "description": "namdom - foto a4",
+    "amount": 70,
+    "currency": "BOB",
+    "paymentMethod": "bank",
+    "category": "Fotografías",
+    "createdAt": "2025-06-17T12:27:23.866Z",
+    "updatedAt": "2025-06-17T12:27:23.866Z"
+  },
+  {
+    "date": "2025-06-09T04:00:00.000Z",
+    "type": "venta",
+    "description": "namdom - impresion a color",
+    "amount": 30,
+    "currency": "BOB",
+    "paymentMethod": "bank",
+    "category": "Impresiones",
+    "createdAt": "2025-06-17T12:27:23.866Z",
+    "updatedAt": "2025-06-17T12:27:23.866Z"
+  },
+  {
+    "date": "2025-06-09T04:00:00.000Z",
+    "type": "venta",
+    "description": "namdom - impresion a color",
+    "amount": 50,
+    "currency": "BOB",
+    "paymentMethod": "bank",
+    "category": "Impresiones",
+    "createdAt": "2025-06-17T12:27:23.866Z",
+    "updatedAt": "2025-06-17T12:27:23.866Z"
+  },
+  {
+    "date": "2025-06-09T04:00:00.000Z",
+    "type": "venta",
+    "description": "na - impresion a color",
+    "amount": 25,
+    "currency": "BOB",
+    "paymentMethod": "bank",
+    "category": "Impresiones",
+    "createdAt": "2025-06-17T12:27:23.866Z",
+    "updatedAt": "2025-06-17T12:27:23.866Z"
+  },
+  {
+    "date": "2025-06-09T04:00:00.000Z",
+    "type": "venta",
+    "description": "namdom - impresion a color",
+    "amount": 30,
+    "currency": "BOB",
+    "paymentMethod": "cash",
+    "category": "Impresiones",
+    "createdAt": "2025-06-17T12:27:23.866Z",
+    "updatedAt": "2025-06-17T12:27:23.866Z"
+  },
+  {
+    "date": "2025-06-09T04:00:00.000Z",
+    "type": "venta",
+    "description": "maler - impresion a color",
+    "amount": 100,
+    "currency": "BOB",
+    "paymentMethod": "cash",
+    "category": "Impresiones",
+    "createdAt": "2025-06-17T12:27:23.866Z",
+    "updatedAt": "2025-06-17T12:27:23.866Z"
+  },
+  {
+    "date": "2025-06-09T04:00:00.000Z",
+    "type": "venta",
+    "description": "namdom - impresion a color",
+    "amount": 25,
+    "currency": "BOB",
+    "paymentMethod": "bank",
+    "category": "Impresiones",
+    "createdAt": "2025-06-17T12:27:23.866Z",
+    "updatedAt": "2025-06-17T12:27:23.866Z"
+  }
+]

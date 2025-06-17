@@ -14,7 +14,18 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   placeholder?: string; // Added placeholder prop
 }
 
-export const Select: React.FC<SelectProps> = ({ label, id, options, error, containerClassName = '', className = '', placeholder, ...props }) => {
+export const Select: React.FC<SelectProps> = ({ 
+  label, 
+  id, 
+  options, 
+  error, 
+  containerClassName = '', 
+  className = '', 
+  placeholder, 
+  value,
+  onChange,
+  ...props 
+}) => {
   const baseStyles = 'block w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm text-slate-100';
   const errorStyles = 'border-red-500 focus:ring-red-500 focus:border-red-500';
   
@@ -24,6 +35,8 @@ export const Select: React.FC<SelectProps> = ({ label, id, options, error, conta
       <select
         id={id}
         className={`${baseStyles} ${error ? errorStyles : ''} ${className}`}
+        value={value}
+        onChange={onChange}
         {...props}
       >
         {placeholder && <option value="">{placeholder}</option>}

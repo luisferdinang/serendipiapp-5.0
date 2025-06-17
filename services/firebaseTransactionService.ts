@@ -26,46 +26,66 @@ const EXCHANGE_RATES_COLLECTION = 'exchangeRates';
 
 export const getTransactions = async (userId: string): Promise<Transaction[]> => {
   try {
-    console.log('Obteniendo transacciones para el usuario:', userId);
+    console.log('🔍 [getTransactions] Obteniendo transacciones para el usuario ID:', userId);
+    
+    if (!userId) {
+      throw new Error('El ID de usuario es requerido');
+    }
+    
     const transactionsRef = collection(db, TRANSACTIONS_COLLECTION);
     
-    // Solo filtramos por usuario (índice simple)
+    console.log('🔍 [getTransactions] Construyendo consulta...');
     const q = query(
       transactionsRef,
       where('userId', '==', userId)
     );
     
-    console.log('Ejecutando consulta...');
+    console.log('🔍 [getTransactions] Ejecutando consulta en Firestore...');
     const querySnapshot = await getDocs(q);
-    console.log(`Se encontraron ${querySnapshot.docs.length} documentos`);
+    console.log(`✅ [getTransactions] Consulta completada. Encontrados ${querySnapshot.docs.length} documentos`);
     
     if (querySnapshot.empty) {
-      console.log('No se encontraron transacciones para el usuario:', userId);
+      console.log('ℹ️ [getTransactions] No se encontraron transacciones para el usuario ID:', userId);
       return [];
     }
     
     // Procesar y ordenar los resultados en memoria
     const transactions = querySnapshot.docs.map(doc => {
       const data = doc.data();
-      console.log('Procesando documento:', { id: doc.id, ...data });
+      console.log('📄 [getTransactions] Procesando documento ID:', doc.id, 'Datos:', JSON.stringify(data, null, 2));
+      
+      // Validar datos requeridos
+      if (!data.userId || data.userId !== userId) {
+        console.warn(`⚠️ [getTransactions] Documento ${doc.id} no pertenece al usuario ${userId}`);
+      }
       
       // Validar y formatear los datos
+      const amount = typeof data.amount === 'number' ? data.amount : (parseFloat(data.amount) || 0);
+      const quantity = (() => {
+        if (data.quantity === undefined || data.quantity === null) return 1; // Valor por defecto
+        if (typeof data.quantity === 'number') return data.quantity;
+        if (typeof data.quantity === 'string') {
+          const parsed = parseFloat(data.quantity);
+          return isNaN(parsed) ? 1 : parsed; // 1 como valor por defecto si no se puede parsear
+        }
+        return 1; // Valor por defecto para cualquier otro caso
+      })();
+      
       const transaction: Transaction = {
         id: doc.id,
-        description: data.description || '',
-        amount: typeof data.amount === 'number' ? data.amount : parseFloat(data.amount) || 0,
-        currency: (data.currency as Currency) || Currency.USD,
+        description: data.description || 'Sin descripción',
+        unitPrice: data.unitPrice || amount, // Usar unitPrice si existe, de lo contrario usar amount
+        quantity: quantity,
+        amount: amount,
+        currency: (data.currency as Currency) || Currency.BS,
         type: (data.type as TransactionType) || TransactionType.EXPENSE,
         date: data.date || new Date().toISOString().split('T')[0],
         paymentMethods: Array.isArray(data.paymentMethods) 
-          ? data.paymentMethods.map((pm: any) => ({
+          ? (data.paymentMethods as Array<{method: string, amount: number | string}>).map((pm) => ({
               method: (pm.method as PaymentMethod) || PaymentMethod.EFECTIVO_USD,
-              amount: typeof pm.amount === 'number' ? pm.amount : parseFloat(pm.amount) || 0
+              amount: typeof pm.amount === 'number' ? pm.amount : (parseFloat(pm.amount as string) || 0)
             }))
           : [],
-        quantity: data.quantity !== undefined 
-          ? (typeof data.quantity === 'number' ? data.quantity : parseFloat(data.quantity) || 0)
-          : undefined,
         category: data.category,
         notes: data.notes
       };
@@ -81,8 +101,10 @@ export const getTransactions = async (userId: string): Promise<Transaction[]> =>
     console.log(`Se procesaron ${sortedTransactions.length} transacciones`);
     return sortedTransactions;
   } catch (error) {
-    console.error('Error getting transactions:', error);
-    throw error;
+    console.error('❌ [getTransactions] Error al obtener transacciones:', error);
+    // En lugar de lanzar el error, retornamos un array vacío para evitar romper la UI
+    // La UI ya manejará el estado de error apropiadamente
+    return [];
   }
 };
 

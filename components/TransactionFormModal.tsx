@@ -40,8 +40,11 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({ isOp
   const [paymentDetails, setPaymentDetails] = useState<FormPaymentDetail[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Obtener métodos de pago disponibles para la moneda actual
   const availablePaymentMethods = useMemo(() => {
-    return PAYMENT_METHOD_OPTIONS.filter(pm => pm.currency === currency);
+    const methods = PAYMENT_METHOD_OPTIONS.filter(pm => pm.currency === currency);
+    console.log('Métodos de pago disponibles para', currency, ':', methods);
+    return methods;
   }, [currency]);
 
   // Calcular el monto total cuando cambia el precio unitario o la cantidad
@@ -51,16 +54,90 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({ isOp
     const total = (price * qty).toFixed(2);
     setTotalAmount(total);
     
-    // Actualizar el primer método de pago con el nuevo monto total
-    if (paymentDetails.length > 0) {
-      setPaymentDetails([{ ...paymentDetails[0], amount: total }]);
+    // Actualizar el monto del primer método de pago si solo hay uno
+    if (paymentDetails.length === 1) {
+      setPaymentDetails([{ 
+        ...paymentDetails[0], 
+        amount: total 
+      }]);
     }
   }, [unitPrice, quantity]);
 
-  useEffect(() => {
-    if (!isOpen) return; // Don't reset if modal is not open / re-opening
+  // Función para normalizar métodos de pago
+  const normalizePaymentMethod = (method: any, currency: Currency): PaymentMethod => {
+    // Si el método ya es un valor válido de PaymentMethod, devolverlo
+    if (method && Object.values(PaymentMethod).includes(method as PaymentMethod)) {
+      return method as PaymentMethod;
+    }
+    
+    // Mapear métodos antiguos o alternativos
+    const methodMap: Record<string, Record<string, PaymentMethod>> = {
+      'BS': {
+        'EFECTIVO': PaymentMethod.EFECTIVO_BS,
+        'PAGO_MOVIL': PaymentMethod.PAGO_MOVIL_BS,
+        'TRANSFERENCIA': PaymentMethod.PAGO_MOVIL_BS,
+        'BANCO': PaymentMethod.PAGO_MOVIL_BS,
+        'BANK': PaymentMethod.PAGO_MOVIL_BS,
+        'TRANSFER': PaymentMethod.PAGO_MOVIL_BS,
+        'PAGOMOVIL': PaymentMethod.PAGO_MOVIL_BS,
+        'PAGO_MOVIL_BS': PaymentMethod.PAGO_MOVIL_BS,
+        'EFECTIVO_BS': PaymentMethod.EFECTIVO_BS
+      },
+      'USD': {
+        'EFECTIVO': PaymentMethod.EFECTIVO_USD,
+        'USDT': PaymentMethod.USDT,
+        'DOLARES': PaymentMethod.EFECTIVO_USD,
+        'EFECTIVO_USD': PaymentMethod.EFECTIVO_USD,
+        'CASH': PaymentMethod.EFECTIVO_USD,
+        'CRIPTO': PaymentMethod.USDT,
+        'CRYPTO': PaymentMethod.USDT,
+        'DIGITAL': PaymentMethod.USDT
+      }
+    };
+    
+    // Si el método es un objeto (como en los datos migrados), convertirlo a string
+    const methodStr = method && typeof method === 'object' 
+      ? Object.entries(method as Record<string, any>)
+          .filter(([_, value]) => value !== null && value !== undefined && value !== '' && value !== 0)
+          .map(([key]) => key.toUpperCase())
+          .join('_')
+      : String(method || '').toUpperCase();
+    
+    console.log('Normalizando método de pago:', { original: method, asString: methodStr });
+    
+    // Intentar mapear el método
+    const normalizedMethod = methodMap[currency]?.[methodStr];
+    if (normalizedMethod) {
+      console.log(`Método normalizado: ${methodStr} -> ${normalizedMethod}`);
+      return normalizedMethod;
+    }
+    
+    // Si no se puede mapear, buscar coincidencias parciales
+    const methodKey = Object.entries(methodMap[currency] || {})
+      .find(([key]) => methodStr.includes(key))?.[0];
+      
+    if (methodKey) {
+      const matchedMethod = methodMap[currency]?.[methodKey];
+      console.log(`Coincidencia parcial: ${methodStr} -> ${methodKey} -> ${matchedMethod}`);
+      return matchedMethod;
+    }
+    
+    // Si no se puede mapear, usar un valor por defecto
+    console.warn(`No se pudo normalizar el método de pago: ${methodStr}. Usando valor por defecto para ${currency}.`);
+    return currency === Currency.USD ? PaymentMethod.EFECTIVO_USD : PaymentMethod.EFECTIVO_BS;
+  };
 
+  // Inicializar el formulario cuando se abre o cambian los datos iniciales
+  useEffect(() => {
+    if (!isOpen) return;
+    
+    // Obtener métodos de pago para la moneda actual del initialData o por defecto
+    const initialCurrency = initialData?.currency || Currency.BS;
+    const methodsForCurrency = PAYMENT_METHOD_OPTIONS.filter(pm => pm.currency === initialCurrency);
+    console.log('Métodos disponibles en inicialización para moneda', initialCurrency, ':', methodsForCurrency);
+    
     if (initialData) {
+      // Lógica de inicialización para edición
       setType(initialData.type);
       setDescription(initialData.description);
       setCategory(initialData.category || '');
@@ -68,80 +145,122 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({ isOp
       setCurrency(initialData.currency);
       setDate(initialData.date);
       
-      // Calcular el precio unitario basado en el monto total y la cantidad
       const qty = initialData.quantity || 1;
       const unitPrice = (initialData.amount / qty).toFixed(2);
-      
       setQuantity(qty.toString());
       setUnitPrice(unitPrice);
       setTotalAmount(initialData.amount.toString());
       
-      setPaymentDetails(initialData.paymentMethods.map(pm => ({ 
-        method: pm.method, 
-        amount: pm.amount.toString()
-      })));
+      // Inicializar métodos de pago
+      if (initialData.paymentMethods?.length > 0) {
+        // Normalizar y validar los métodos de pago
+        const validPaymentMethods = initialData.paymentMethods.map(pm => {
+          // Normalizar el método de pago
+          const normalizedMethod = normalizePaymentMethod(pm.method, initialData.currency);
+          
+          // Validar que el método normalizado sea compatible con la moneda
+          const isValidForCurrency = methodsForCurrency.some(m => m.id === normalizedMethod);
+          
+          if (!isValidForCurrency) {
+            console.warn(`Método ${normalizedMethod} no es válido para la moneda ${initialData.currency}. Usando valor por defecto.`);
+            return {
+              method: methodsForCurrency[0]?.id || 
+                     (initialData.currency === Currency.USD ? 
+                      PaymentMethod.EFECTIVO_USD : 
+                      PaymentMethod.EFECTIVO_BS),
+              amount: typeof pm.amount === 'number' ? pm.amount.toString() : pm.amount || '0.00'
+            };
+          }
+          
+          return {
+            method: normalizedMethod,
+            amount: typeof pm.amount === 'number' ? pm.amount.toString() : pm.amount || '0.00'
+          };
+        });
+        
+        console.log('Métodos de pago normalizados:', validPaymentMethods);
+        setPaymentDetails(validPaymentMethods);
+      } else {
+        // Si no hay métodos de pago, usar uno por defecto
+        const defaultMethod = methodsForCurrency[0]?.id || 
+                             (initialData.currency === Currency.USD ? 
+                              PaymentMethod.EFECTIVO_USD : 
+                              PaymentMethod.EFECTIVO_BS);
+        setPaymentDetails([{ 
+          method: defaultMethod, 
+          amount: initialData.amount.toString() 
+        }]);
+      }
     } else {
-      // Reset form for new transaction
+      // Lógica de inicialización para nuevo registro
       setType(TransactionType.INCOME);
       setDescription('');
       setCategory('');
       setNotes('');
       setUnitPrice('');
       setQuantity('1');
-      setTotalAmount('');
-      const defaultCurrency = Currency.BS;
-      setCurrency(defaultCurrency);
+      setTotalAmount('0.00');
       setDate(formatDateForInput(new Date()));
-      const defaultPaymentMethodForCurrency = PAYMENT_METHOD_OPTIONS.find(pm => pm.currency === defaultCurrency)?.id || PaymentMethod.PAGO_MOVIL_BS;
-      setPaymentDetails([{ method: defaultPaymentMethodForCurrency, amount: '0.00' }]);
+      
+      // Inicializar con un método de pago por defecto
+      const defaultMethod = methodsForCurrency[0]?.id || PaymentMethod.EFECTIVO_BS;
+      setPaymentDetails([{ 
+        method: defaultMethod, 
+        amount: '0.00' 
+      }]);
     }
-    setErrors({});
-  }, [isOpen, initialData]);
-
-  useEffect(() => {
-    // This effect ensures that payment details are updated when the currency changes,
-    // or when the totalAmount might pre-fill a single payment part.
-    // It also ensures that the selected payment methods are valid for the current currency.
     
-    // Only run if the modal is open and not during the initial data load handled by the first useEffect
-    if (!isOpen || (initialData && initialData.currency === currency && paymentDetails.length > 0 && paymentDetails[0].amount === initialData.paymentMethods[0]?.amount.toString())) {
-        // If initialData currency matches current form currency AND paymentDetails are already set from initialData,
-        // then the first useEffect has done its job for initial load.
-        // However, if totalAmount changes for a single payment detail, update it.
-        if (initialData && initialData.currency === currency && paymentDetails.length === 1 && paymentDetails[0].amount !== totalAmount) {
-             setPaymentDetails(prev => [{ ...prev[0], amount: totalAmount }]);
-        }
-        return;
-    }
+    setErrors({});
+  }, [isOpen, initialData]); // Eliminamos currency de las dependencias para evitar bucles
 
-
-    if (availablePaymentMethods.length > 0) {
-        setPaymentDetails(prevFormDetails => {
-            // Scenario 1: Form is empty, or we are editing and currency matches initial data's currency.
-            // This condition was from the original code, adapted for FormPaymentDetail.
-            // If `initialData` is present AND its currency is the same as the current form currency,
-            // it means we are potentially editing, and the currency selection hasn't been changed by the user *yet*.
-            // In this case, we want to ensure the methods are valid for the currency, preserving amounts.
-            if (prevFormDetails.length === 0 || (initialData?.currency === currency)) {
-                if (prevFormDetails.length === 0) { // If truly empty (e.g. new form, or currency just changed)
-                    return [{ method: availablePaymentMethods[0].id, amount: totalAmount || '' }];
-                }
-                // If editing and currency is same as initialData, map existing details
-                return prevFormDetails.map(fd => ({
-                    ...fd, // fd.amount is already string
-                    method: availablePaymentMethods.find(apm => apm.id === fd.method) 
-                            ? fd.method 
-                            : availablePaymentMethods[0].id,
-                }));
-            }
-            // Scenario 2: Currency has changed from initialData's currency, or from what prevFormDetails were based on.
-            // Reset to a single payment detail for the new currency, using totalAmount if available.
-            return [{ method: availablePaymentMethods[0].id, amount: totalAmount || '' }];
-        });
-    } else {
-      setPaymentDetails([]);
+  // Actualizar métodos de pago cuando cambia la moneda
+  useEffect(() => {
+    if (!isOpen) return;
+    
+    console.log('Moneda actualizada a:', currency);
+    console.log('Métodos disponibles:', availablePaymentMethods);
+    
+    // Si no hay métodos de pago disponibles para la moneda actual, usar uno por defecto
+    if (availablePaymentMethods.length === 0) {
+      console.log('No hay métodos disponibles para la moneda, usando valor por defecto');
+      const defaultMethod = currency === Currency.USD ? PaymentMethod.EFECTIVO_USD : PaymentMethod.EFECTIVO_BS;
+      setPaymentDetails([{ 
+        method: defaultMethod, 
+        amount: totalAmount || '0.00' 
+      }]);
+      return;
     }
-  }, [currency, availablePaymentMethods, totalAmount, initialData, isOpen]); // Dependencies from original logic, isOpen added
+    
+    // Si hay métodos disponibles, asegurarse de que el método actual sea válido
+    setPaymentDetails(prev => {
+      console.log('Actualizando detalles de pago. Estado anterior:', prev);
+      
+      if (prev.length === 0) {
+        const newDetail = { 
+          method: availablePaymentMethods[0].id, 
+          amount: totalAmount || '0.00' 
+        };
+        console.log('No hay detalles previos, creando nuevo:', newDetail);
+        return [newDetail];
+      }
+      
+      // Verificar si el método actual es válido para la moneda
+      const currentMethod = prev[0]?.method;
+      const isCurrentMethodValid = availablePaymentMethods.some(m => m.id === currentMethod);
+      
+      if (!isCurrentMethodValid) {
+        const newDetail = { 
+          method: availablePaymentMethods[0].id, 
+          amount: prev[0]?.amount || totalAmount || '0.00' 
+        };
+        console.log('Método actual no válido, actualizando a:', newDetail);
+        return [newDetail];
+      }
+      
+      console.log('Método actual es válido, manteniendo:', prev);
+      return prev;
+    });
+  }, [currency, availablePaymentMethods, totalAmount, isOpen]);
 
 
   const validateForm = (): boolean => {
@@ -204,10 +323,10 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({ isOp
       currency,
       type,
       date,
-      paymentMethods: [{
-        method: paymentDetails[0]?.method || PaymentMethod.EFECTIVO_BS,
-        amount: parseFloat(totalAmount) || 0
-      }],
+      paymentMethods: paymentDetails.map(pd => ({
+        method: pd.method || PaymentMethod.EFECTIVO_BS,
+        amount: parseFloat(pd.amount) || 0
+      })),
       ...(category && { category: category.trim() }),
       ...(notes && { notes: notes.trim() })
     };
@@ -220,12 +339,29 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({ isOp
   };
   
   const handleAddPaymentDetail = () => {
-    const defaultMethod = availablePaymentMethods.length > 0 ? availablePaymentMethods[0].id : undefined;
-    if (!defaultMethod) {
-        setErrors(prev => ({...prev, paymentDetails: 'No hay métodos de pago disponibles para la moneda seleccionada.'}));
-        return;
+    if (availablePaymentMethods.length === 0) {
+      setErrors(prev => ({
+        ...prev, 
+        paymentMethods: 'No hay métodos de pago disponibles para la moneda seleccionada.'
+      }));
+      return;
     }
-    setPaymentDetails([...paymentDetails, { method: defaultMethod, amount: '' }]);
+    
+    const defaultMethod = availablePaymentMethods[0].id;
+    setPaymentDetails(prev => [
+      ...prev, 
+      { 
+        method: defaultMethod, 
+        amount: '0.00' 
+      }
+    ]);
+    
+    // Limpiar cualquier error previo
+    setErrors(prev => {
+      const newErrors = {...prev};
+      delete newErrors.paymentMethods;
+      return newErrors;
+    });
   };
 
   const handleRemovePaymentDetail = (index: number) => {
@@ -234,10 +370,31 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({ isOp
   };
 
   const handlePaymentDetailChange = (index: number, field: keyof FormPaymentDetail, value: string | PaymentMethod) => {
-    const newPaymentDetails = [...paymentDetails];
-    // TypeScript needs assertion because field could be 'method' (PaymentMethod) or 'amount' (string)
-    (newPaymentDetails[index] as any)[field] = value; 
-    setPaymentDetails(newPaymentDetails);
+    console.log('Cambio en detalle de pago:', { index, field, value });
+    setPaymentDetails(prevDetails => {
+      const newDetails = [...prevDetails];
+      
+      if (field === 'method') {
+        // Asegurarse de que el valor es un PaymentMethod válido
+        const methodValue = Object.values(PaymentMethod).includes(value as PaymentMethod) 
+          ? value as PaymentMethod 
+          : PaymentMethod.EFECTIVO_BS;
+        
+        newDetails[index] = {
+          ...newDetails[index],
+          method: methodValue
+        };
+        console.log('Método de pago actualizado a:', methodValue);
+      } else if (field === 'amount') {
+        newDetails[index] = {
+          ...newDetails[index],
+          amount: value as string
+        };
+      }
+      
+      console.log('Nuevos detalles de pago:', newDetails);
+      return newDetails;
+    });
   };
 
   const isAdjustment = type === TransactionType.ADJUSTMENT;
@@ -256,14 +413,27 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({ isOp
               onChange={(e) => setType(e.target.value as TransactionType)}
               required
             />
-            <Select
-              id="currency"
-              label="Moneda de la Transacción"
-              options={CURRENCY_OPTIONS}
-              value={currency}
-              onChange={(e) => setCurrency(e.target.value as Currency)}
-              required
-            />
+            <div className="mb-4">
+              <label htmlFor="currency" className="block text-sm font-medium text-slate-300 mb-1">
+                Moneda de la Transacción
+              </label>
+              <select
+                id="currency"
+                className="block w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm text-slate-100"
+                value={currency}
+                onChange={(e) => {
+                  console.log('Cambiando moneda a:', e.target.value);
+                  setCurrency(e.target.value as Currency);
+                }}
+                required
+              >
+                {CURRENCY_OPTIONS.map(option => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
         </div>
         
         <Input
@@ -347,16 +517,38 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({ isOp
             <legend className="text-sm font-medium text-sky-300 px-1">Desglose de Pago</legend>
             {paymentDetails.map((pd, index) => (
                 <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end mb-3 p-3 bg-slate-700/50 rounded">
-                    <Select
-                        id={`paymentMethod_${index}`}
-                        label={`Método Parte ${index + 1}`}
-                        options={availablePaymentMethods.map(pm => ({ value: pm.id, label: pm.label }))}
-                        value={pd.method}
-                        onChange={(e) => handlePaymentDetailChange(index, 'method', e.target.value as PaymentMethod)}
-                        error={errors[`paymentMethod_${index}`]}
-                        containerClassName="mb-0"
-                        required
-                    />
+                    <div className="w-full">
+                      <label htmlFor={`paymentMethod_${index}`} className="block text-sm font-medium text-slate-300 mb-1">
+                        Método Parte {index + 1}
+                      </label>
+                      <div className="w-full">
+                        <label htmlFor={`paymentMethod_${index}`} className="block text-sm font-medium text-slate-300 mb-1">
+                          Método de Pago {index + 1}
+                        </label>
+                        <select
+                          id={`paymentMethod_${index}`}
+                          value={pd.method}
+                          onChange={(e) => {
+                            console.log('Selección cambiada a:', e.target.value);
+                            handlePaymentDetailChange(index, 'method', e.target.value as PaymentMethod);
+                          }}
+                          className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm text-slate-100"
+                          required
+                        >
+                          {availablePaymentMethods.map(pm => (
+                            <option 
+                              key={pm.id} 
+                              value={pm.id}
+                            >
+                              {pm.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      {errors[`paymentMethod_${index}`] && (
+                        <p className="mt-1 text-xs text-red-400">{errors[`paymentMethod_${index}`]}</p>
+                      )}
+                    </div>
                     <Input
                         id={`paymentAmount_${index}`}
                         label={`Monto Parte ${index + 1}`}

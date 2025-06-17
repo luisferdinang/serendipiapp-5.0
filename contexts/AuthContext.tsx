@@ -19,12 +19,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('🔐 [AuthProvider] Configurando observador de autenticación...');
+    
     const unsubscribe = onAuthStateChanged(auth, (user) => {
+      console.log('👤 [AuthProvider] Estado de autenticación cambiado:', 
+        user ? `Usuario autenticado (${user.email}, UID: ${user.uid})` : 'Usuario no autenticado'
+      );
+      
       setCurrentUser(user);
+      setLoading(false);
+      
+      if (user) {
+        // Verificar si el token está disponible
+        user.getIdTokenResult()
+          .then((idTokenResult) => {
+            console.log('🔑 [AuthProvider] Token info:', {
+              tokenExpiration: idTokenResult.expirationTime,
+              claims: idTokenResult.claims,
+              authTime: idTokenResult.authTime
+            });
+          })
+          .catch(error => {
+            console.error('❌ [AuthProvider] Error obteniendo token:', error);
+          });
+      }
+    }, (error) => {
+      console.error('❌ [AuthProvider] Error en el observador de autenticación:', error);
       setLoading(false);
     });
 
-    return unsubscribe;
+    return () => {
+      console.log('🔒 [AuthProvider] Limpiando observador de autenticación');
+      unsubscribe();
+    };
   }, []);
 
   const value = {

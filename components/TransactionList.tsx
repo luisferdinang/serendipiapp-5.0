@@ -85,7 +85,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
             </thead>
             <tbody className="bg-slate-800 divide-y divide-slate-700">
               {paginatedTransactions.map(t => {
-                const amountColor = t.type === 'expense' ? 'text-red-400' : 'text-green-400';
+                const amountColor = t.type.toUpperCase() === 'EXPENSE' ? 'text-red-400' : 'text-green-400';
                 return (
                   <tr key={t.id} className="hover:bg-slate-700/30 transition-colors duration-150">
                     <td className="px-3 py-4 whitespace-normal break-words text-sm text-slate-200 max-w-xs">{t.description}</td>
@@ -95,7 +95,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                       {formatPaymentMethods(t)}
                     </td>
                     <td className={`px-3 py-4 whitespace-nowrap text-sm text-right font-medium ${amountColor}`}>
-                      {`${t.type === 'expense' ? '-' : ''}${t.amount.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${t.currency}`}
+                      {`${t.type.toUpperCase() === 'EXPENSE' ? '-' : ''}${t.amount.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${t.currency}`}
                     </td>
                     <td className="px-3 py-4 whitespace-nowrap text-center text-sm space-x-2">
                       <Button variant="ghost" size="sm" onClick={() => onEdit(t)} aria-label={`Editar ${t.description}`}>

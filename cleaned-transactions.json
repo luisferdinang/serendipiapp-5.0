@@ -1,0 +1,886 @@
+[
+  {
+    "id": "1749602262228",
+    "date": "2025-06-08",
+    "type": "adjustment",
+    "description": "banco bs",
+    "quantity": 1,
+    "unitPrice": 0,
+    "amount": 0,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "PAGO_MOVIL_BS",
+        "amount": 2585
+      }
+    ]
+  },
+  {
+    "id": "1749605276080",
+    "date": "2025-06-08",
+    "type": "adjustment",
+    "description": "efectivo bs",
+    "quantity": 1,
+    "unitPrice": 0,
+    "amount": 0,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "EFECTIVO_BS",
+        "amount": 310
+      }
+    ]
+  },
+  {
+    "id": "1749605544017",
+    "date": "2025-06-08",
+    "type": "adjustment",
+    "description": "usdt ",
+    "quantity": 1,
+    "unitPrice": 0,
+    "amount": 0,
+    "currency": "USD",
+    "paymentMethods": [
+      {
+        "method": "USDT",
+        "amount": 90
+      }
+    ]
+  },
+  {
+    "id": "1749605592115",
+    "date": "2025-06-08",
+    "type": "adjustment",
+    "description": "dolares usd",
+    "quantity": 1,
+    "unitPrice": 0,
+    "amount": 0,
+    "currency": "USD",
+    "paymentMethods": [
+      {
+        "method": "EFECTIVO_USD",
+        "amount": 30
+      }
+    ]
+  },
+  {
+    "id": "1749605682378",
+    "date": "2025-06-09",
+    "type": "income",
+    "description": "ramdom - impresión a color ",
+    "quantity": 1,
+    "unitPrice": 20,
+    "amount": 20,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "PAGO_MOVIL_BS",
+        "amount": 20
+      }
+    ]
+  },
+  {
+    "id": "1749605717387",
+    "date": "2025-06-09",
+    "type": "income",
+    "description": "ramdom - foto a4",
+    "quantity": 1,
+    "unitPrice": 70,
+    "amount": 70,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "PAGO_MOVIL_BS",
+        "amount": 70
+      }
+    ]
+  },
+  {
+    "id": "1749605770302",
+    "date": "2025-06-09",
+    "type": "income",
+    "description": "ramdom - impresión a color ",
+    "quantity": 2,
+    "unitPrice": 15,
+    "amount": 30,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "EFECTIVO_BS",
+        "amount": 30
+      }
+    ]
+  },
+  {
+    "id": "1749606014394",
+    "date": "2025-06-09",
+    "type": "income",
+    "description": "ramdom - impresión a color ",
+    "quantity": 2,
+    "unitPrice": 25,
+    "amount": 50,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "PAGO_MOVIL_BS",
+        "amount": 50
+      }
+    ]
+  },
+  {
+    "id": "1749606380872",
+    "date": "2025-06-09",
+    "type": "income",
+    "description": "ra - impresion a color",
+    "quantity": 2,
+    "unitPrice": 15,
+    "amount": 30,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "PAGO_MOVIL_BS",
+        "amount": 30
+      }
+    ]
+  },
+  {
+    "id": "1749606596985",
+    "date": "2025-06-09",
+    "type": "income",
+    "description": "ramdom - impresion a color",
+    "quantity": 3,
+    "unitPrice": 20,
+    "amount": 60,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "PAGO_MOVIL_BS",
+        "amount": 60
+      }
+    ]
+  },
+  {
+    "id": "1749606641221",
+    "date": "2025-06-09",
+    "type": "income",
+    "description": "ramdom - impresion a color",
+    "quantity": 1,
+    "unitPrice": 20,
+    "amount": 20,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "EFECTIVO_BS",
+        "amount": 20
+      }
+    ]
+  },
+  {
+    "id": "1749606733025",
+    "date": "2025-06-09",
+    "type": "income",
+    "description": "lixa  - impresion blanco y negro",
+    "quantity": 5,
+    "unitPrice": 5,
+    "amount": 25,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "PAGO_MOVIL_BS",
+        "amount": 25
+      }
+    ]
+  },
+  {
+    "id": "1749606762858",
+    "date": "2025-06-09",
+    "type": "income",
+    "description": "ra - impresion a color",
+    "quantity": 2,
+    "unitPrice": 15,
+    "amount": 30,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "PAGO_MOVIL_BS",
+        "amount": 30
+      }
+    ]
+  },
+  {
+    "id": "1749606797801",
+    "date": "2025-06-09",
+    "type": "income",
+    "description": "mafer - impresion a color",
+    "quantity": 1,
+    "unitPrice": 30,
+    "amount": 30,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "PAGO_MOVIL_BS",
+        "amount": 30
+      }
+    ]
+  },
+  {
+    "id": "1749606864084",
+    "date": "2025-06-10",
+    "type": "income",
+    "description": "ramdom - impresion blanco y negro",
+    "quantity": 2,
+    "unitPrice": 5,
+    "amount": 10,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "PAGO_MOVIL_BS",
+        "amount": 10
+      }
+    ]
+  },
+  {
+    "id": "1749606897651",
+    "date": "2025-06-10",
+    "type": "income",
+    "description": "ramdom - impresion a blanco y negro",
+    "quantity": 5,
+    "unitPrice": 2,
+    "amount": 10,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "PAGO_MOVIL_BS",
+        "amount": 10
+      }
+    ]
+  },
+  {
+    "id": "1749607608906",
+    "date": "2025-06-10",
+    "type": "income",
+    "description": "ra - impresion a color",
+    "quantity": 1,
+    "unitPrice": 25,
+    "amount": 25,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "PAGO_MOVIL_BS",
+        "amount": 25
+      }
+    ]
+  },
+  {
+    "id": "1749607655317",
+    "date": "2025-06-10",
+    "type": "income",
+    "description": "ramdom - impresion a color",
+    "quantity": 7,
+    "unitPrice": 10,
+    "amount": 70,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "PAGO_MOVIL_BS",
+        "amount": 70
+      }
+    ]
+  },
+  {
+    "id": "1749607682845",
+    "date": "2025-06-10",
+    "type": "income",
+    "description": "luz  - impresion a color",
+    "quantity": 5,
+    "unitPrice": 20,
+    "amount": 100,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "PAGO_MOVIL_BS",
+        "amount": 100
+      }
+    ]
+  },
+  {
+    "id": "1749607722490",
+    "date": "2025-06-10",
+    "type": "income",
+    "description": "belkys - impresion a color",
+    "quantity": 1,
+    "unitPrice": 25,
+    "amount": 25,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "EFECTIVO_BS",
+        "amount": 25
+      }
+    ]
+  },
+  {
+    "id": "1749608298852",
+    "date": "2025-06-10",
+    "type": "income",
+    "description": "ramdom - impresion a color",
+    "quantity": 1,
+    "unitPrice": 25,
+    "amount": 25,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "PAGO_MOVIL_BS",
+        "amount": 25
+      }
+    ]
+  },
+  {
+    "id": "1749657475105",
+    "date": "2025-06-11",
+    "type": "income",
+    "description": "señora norma  - copias blanco y negro",
+    "quantity": 17,
+    "unitPrice": 5,
+    "amount": 85,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "EFECTIVO_BS",
+        "amount": 85
+      }
+    ]
+  },
+  {
+    "id": "1749663359493",
+    "date": "2025-06-11",
+    "type": "income",
+    "description": "yormary - copias",
+    "quantity": 1,
+    "unitPrice": 5,
+    "amount": 5,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "PAGO_MOVIL_BS",
+        "amount": 5
+      }
+    ]
+  },
+  {
+    "id": "1749678565814",
+    "date": "2025-06-11",
+    "type": "income",
+    "description": "luz - impresion foto a4",
+    "quantity": 3,
+    "unitPrice": 80,
+    "amount": 240,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "PAGO_MOVIL_BS",
+        "amount": 240
+      }
+    ]
+  },
+  {
+    "id": "1749678626380",
+    "date": "2025-06-11",
+    "type": "income",
+    "description": "chica guaros - impresión a color ",
+    "quantity": 2,
+    "unitPrice": 20,
+    "amount": 40,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "PAGO_MOVIL_BS",
+        "amount": 40
+      }
+    ]
+  },
+  {
+    "id": "1749678663449",
+    "date": "2025-06-11",
+    "type": "income",
+    "description": "luz - impresión a color ",
+    "quantity": 1,
+    "unitPrice": 20,
+    "amount": 20,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "PAGO_MOVIL_BS",
+        "amount": 20
+      }
+    ]
+  },
+  {
+    "id": "1749683801814",
+    "date": "2025-06-11",
+    "type": "income",
+    "description": "subide - estampitas",
+    "quantity": 2,
+    "unitPrice": 25,
+    "amount": 50,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "EFECTIVO_BS",
+        "amount": 50
+      }
+    ]
+  },
+  {
+    "id": "1749684447334",
+    "date": "2025-06-11",
+    "type": "income",
+    "description": "magdy - impresion a color",
+    "quantity": 10,
+    "unitPrice": 20,
+    "amount": 200,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "PAGO_MOVIL_BS",
+        "amount": 200
+      }
+    ]
+  },
+  {
+    "id": "1749698410643",
+    "date": "2025-06-11",
+    "type": "income",
+    "description": "yormary - copias",
+    "quantity": 2,
+    "unitPrice": 5,
+    "amount": 10,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "PAGO_MOVIL_BS",
+        "amount": 10
+      }
+    ]
+  },
+  {
+    "id": "1749729673196",
+    "date": "2025-06-12",
+    "type": "income",
+    "description": "laury - impresion blanco y negro",
+    "quantity": 3,
+    "unitPrice": 5,
+    "amount": 15,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "EFECTIVO_BS",
+        "amount": 15
+      }
+    ]
+  },
+  {
+    "id": "1749764248508",
+    "date": "2025-06-12",
+    "type": "expense",
+    "description": "hoja de maquina carta",
+    "quantity": 1,
+    "unitPrice": 620,
+    "amount": 620,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "PAGO_MOVIL_BS",
+        "amount": 620
+      }
+    ]
+  },
+  {
+    "id": "1749764286487",
+    "date": "2025-06-12",
+    "type": "expense",
+    "description": "hoja de plastificar carta",
+    "quantity": 3,
+    "unitPrice": 55,
+    "amount": 165,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "PAGO_MOVIL_BS",
+        "amount": 165
+      }
+    ]
+  },
+  {
+    "id": "1749764400582",
+    "date": "2025-06-12",
+    "type": "expense",
+    "description": "papel de sticker",
+    "quantity": 1,
+    "unitPrice": 330,
+    "amount": 330,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "PAGO_MOVIL_BS",
+        "amount": 330
+      }
+    ]
+  },
+  {
+    "id": "1749764456080",
+    "date": "2025-06-12",
+    "type": "expense",
+    "description": "pasaje",
+    "quantity": 2,
+    "unitPrice": 30,
+    "amount": 60,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "PAGO_MOVIL_BS",
+        "amount": 30
+      },
+      {
+        "method": "EFECTIVO_BS",
+        "amount": 30
+      }
+    ]
+  },
+  {
+    "id": "1749767988509",
+    "date": "2025-06-12",
+    "type": "income",
+    "description": "niña guaro - impresion a color",
+    "quantity": 1,
+    "unitPrice": 20,
+    "amount": 20,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "EFECTIVO_BS",
+        "amount": 20
+      }
+    ]
+  },
+  {
+    "id": "1749775201859",
+    "date": "2025-06-13",
+    "type": "income",
+    "description": "laurys - impresion a blanco y negro",
+    "quantity": 22,
+    "unitPrice": 5,
+    "amount": 110,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "PAGO_MOVIL_BS",
+        "amount": 110
+      }
+    ]
+  },
+  {
+    "id": "1749859517454",
+    "date": "2025-06-13",
+    "type": "income",
+    "description": "ruben torres - carnet",
+    "quantity": 10,
+    "unitPrice": 25,
+    "amount": 250,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "PAGO_MOVIL_BS",
+        "amount": 250
+      }
+    ]
+  },
+  {
+    "id": "1749911084109",
+    "date": "2025-06-14",
+    "type": "income",
+    "description": "laurys - impresion blanco y negro",
+    "quantity": 43,
+    "unitPrice": 5,
+    "amount": 215,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "PAGO_MOVIL_BS",
+        "amount": 215
+      }
+    ]
+  },
+  {
+    "id": "1749922166047",
+    "date": "2025-06-14",
+    "type": "income",
+    "description": "miliany - impresion a color",
+    "quantity": 5,
+    "unitPrice": 10,
+    "amount": 50,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "EFECTIVO_BS",
+        "amount": 50
+      }
+    ]
+  },
+  {
+    "id": "1749989346190",
+    "date": "2025-06-14",
+    "type": "income",
+    "description": "Rosman chalo - impresion a color",
+    "quantity": 9,
+    "unitPrice": 25,
+    "amount": 225,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "PAGO_MOVIL_BS",
+        "amount": 225
+      }
+    ]
+  },
+  {
+    "id": "1749989758989",
+    "date": "2025-06-14",
+    "type": "income",
+    "description": "ramdom - impresion a color",
+    "quantity": 4,
+    "unitPrice": 20,
+    "amount": 80,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "EFECTIVO_BS",
+        "amount": 80
+      }
+    ]
+  },
+  {
+    "id": "1750005942772",
+    "date": "2025-06-15",
+    "type": "income",
+    "description": "myv - impresion blanco y negro",
+    "quantity": 56,
+    "unitPrice": 5,
+    "amount": 280,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "PAGO_MOVIL_BS",
+        "amount": 280
+      }
+    ]
+  },
+  {
+    "id": "1750007839440",
+    "date": "2025-06-15",
+    "type": "income",
+    "description": "sandrys - impresion blanco y negro",
+    "quantity": 2,
+    "unitPrice": 5,
+    "amount": 10,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "EFECTIVO_BS",
+        "amount": 10
+      }
+    ]
+  },
+  {
+    "id": "1750007879101",
+    "date": "2025-06-15",
+    "type": "income",
+    "description": "chica guaros - impresion a color",
+    "quantity": 3,
+    "unitPrice": 20,
+    "amount": 60,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "EFECTIVO_BS",
+        "amount": 60
+      }
+    ]
+  },
+  {
+    "id": "1750008775808",
+    "date": "2025-06-15",
+    "type": "income",
+    "description": "jose aray - impresion a c",
+    "quantity": 30,
+    "unitPrice": 20,
+    "amount": 600,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "PAGO_MOVIL_BS",
+        "amount": 600
+      }
+    ]
+  },
+  {
+    "id": "1750032407378",
+    "date": "2025-06-16",
+    "type": "income",
+    "description": "ubi - impresion oficio bn",
+    "quantity": 20,
+    "unitPrice": 10,
+    "amount": 200,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "PAGO_MOVIL_BS",
+        "amount": 200
+      }
+    ]
+  },
+  {
+    "id": "1750032446138",
+    "date": "2025-06-16",
+    "type": "income",
+    "description": "taili - impresion a color",
+    "quantity": 10,
+    "unitPrice": 12,
+    "amount": 120,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "PAGO_MOVIL_BS",
+        "amount": 120
+      }
+    ]
+  },
+  {
+    "id": "1750032490053",
+    "date": "2025-06-16",
+    "type": "income",
+    "description": "ramdom - impresion a color",
+    "quantity": 3,
+    "unitPrice": 20,
+    "amount": 60,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "EFECTIVO_BS",
+        "amount": 60
+      }
+    ]
+  },
+  {
+    "id": "1750032515574",
+    "date": "2025-06-16",
+    "type": "income",
+    "description": "ramdom - impresion a blanco y negro",
+    "quantity": 2,
+    "unitPrice": 5,
+    "amount": 10,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "PAGO_MOVIL_BS",
+        "amount": 10
+      }
+    ]
+  },
+  {
+    "id": "1750034065275",
+    "date": "2025-06-16",
+    "type": "income",
+    "description": "rubi - impresion a color",
+    "quantity": 5,
+    "unitPrice": 20,
+    "amount": 100,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "PAGO_MOVIL_BS",
+        "amount": 100
+      }
+    ]
+  },
+  {
+    "id": "1750037452779",
+    "date": "2025-06-16",
+    "type": "income",
+    "description": "ramdom - Producto",
+    "quantity": 1,
+    "unitPrice": 20,
+    "amount": 20,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "EFECTIVO_BS",
+        "amount": 20
+      }
+    ]
+  },
+  {
+    "id": "1750037475464",
+    "date": "2025-06-16",
+    "type": "income",
+    "description": "kamila - impresion sticker",
+    "quantity": 1,
+    "unitPrice": 80,
+    "amount": 80,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "PAGO_MOVIL_BS",
+        "amount": 80
+      }
+    ]
+  },
+  {
+    "id": "1750095968428",
+    "date": "2025-06-16",
+    "type": "income",
+    "description": "mafer - impresion a color",
+    "quantity": 2,
+    "unitPrice": 25,
+    "amount": 50,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "PAGO_MOVIL_BS",
+        "amount": 50
+      }
+    ]
+  },
+  {
+    "id": "1750126745612",
+    "date": "2025-06-16",
+    "type": "income",
+    "description": "lourdes - impresion a color",
+    "quantity": 8,
+    "unitPrice": 20,
+    "amount": 160,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "PAGO_MOVIL_BS",
+        "amount": 160
+      }
+    ]
+  },
+  {
+    "id": "1750130301346",
+    "date": "2025-06-17",
+    "type": "income",
+    "description": "lourdes - impresion a blanco y negro",
+    "quantity": 9,
+    "unitPrice": 5,
+    "amount": 45,
+    "currency": "BS",
+    "paymentMethods": [
+      {
+        "method": "PAGO_MOVIL_BS",
+        "amount": 45
+      }
+    ]
+  }
+]

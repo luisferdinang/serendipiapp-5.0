@@ -6,14 +6,18 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "import:data": "node scripts/dist/importData.js"
   },
   "dependencies": {
     "@react-firebase/auth": "^0.2.10",
     "@react-firebase/firestore": "^0.5.5",
     "firebase": "^11.9.1",
+    "firebase-admin": "^13.4.0",
+    "json2csv": "^6.0.0-alpha.2",
     "jspdf": "^3.0.1",
     "jspdf-autotable": "^5.0.2",
+    "pdf-parse": "^1.1.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.6.2"
@@ -22,6 +26,9 @@
     "@types/node": "^22.15.32",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
+    "dotenv": "^16.5.0",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.20.3",
     "typescript": "~5.7.2",
     "vite": "^6.2.0"
   }
