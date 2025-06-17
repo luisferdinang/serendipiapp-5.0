@@ -5,10 +5,14 @@ import { useNavigate } from 'react-router-dom';
 
 type AuthContextType = {
   currentUser: User | null;
+  user: User | null; // Alias para compatibilidad
   loading: boolean;
   error: string | null;
   signOut: () => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
   clearError: () => void;
+  getVenezuelaDate: () => Date;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -97,8 +101,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [signOut]);
 
-  const value = {
+  // Función para obtener la fecha actual en Venezuela (UTC-4)
+  const getVenezuelaDate = (): Date => {
+    // Usar toLocaleString con la zona horaria de América/Caracas
+    const options = { timeZone: 'America/Caracas' };
+    const dateStr = new Date().toLocaleString('en-US', options);
+    return new Date(dateStr);
+  };
+
+  const value: AuthContextType = {
     currentUser,
+    user: currentUser, // Alias para compatibilidad
+    login: async (email: string, password: string) => {
+      // Implementación de login si es necesaria
+      throw new Error('Login no implementado');
+    },
+    logout: signOut, // Alias para signOut
+    getVenezuelaDate,
     loading,
     error,
     signOut,

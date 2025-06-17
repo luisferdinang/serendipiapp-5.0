@@ -54,7 +54,7 @@ const ITEMS_PER_PAGE_OPTIONS = [
 type ActiveTab = 'finanzas' | 'dashboard';
 
 const App: React.FC = () => {
-  const { currentUser } = useAuth();
+  const { currentUser, getVenezuelaDate } = useAuth();
   const isAuthenticated = !!currentUser;
 
   const [email, setEmail] = useState('');
@@ -165,21 +165,40 @@ const App: React.FC = () => {
     setItemsPerPage(Number(newItemsPerPage));
   };
 
+  // Función para formatear fecha a YYYY-MM-DD
+  const formatDateToYMD = (date: Date): string => {
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const handleGenerateReport = () => {
-    // Filtrar transacciones según el período seleccionado
-    let filteredIncomeAndAdjustments = [...incomeAndAdjustments];
-    let filteredExpenses = [...expenses];
+    // Usar las transacciones ya filtradas del hook useFirebaseTransactions
+    // para mantener consistencia con lo que se muestra en la UI
+    let reportIncomeAndAdjustments = [...incomeAndAdjustments];
+    let reportExpenses = [...expenses];
     
-    // Aplicar filtro de fecha según el período seleccionado
-    if (filterPeriod !== FilterPeriod.ALL) {
+    // Si el filtro es HOY, asegurarnos de usar la misma lógica que en useFirebaseTransactions
+    if (filterPeriod === FilterPeriod.TODAY) {
+      const now = getVenezuelaDate();
+      const todayStr = formatDateToYMD(now);
+      
+      const filterToday = (tx: Transaction) => {
+        const txDateStr = tx.date.split('T')[0];
+        return txDateStr === todayStr;
+      };
+      
+      reportIncomeAndAdjustments = incomeAndAdjustments.filter(filterToday);
+      reportExpenses = expenses.filter(filterToday);
+    } else if (filterPeriod !== FilterPeriod.ALL) {
+      // Para los demás períodos, usar la lógica existente
       const now = new Date();
       let startDate: Date;
       let endDate: Date = new Date();
       
       switch (filterPeriod) {
-        case FilterPeriod.TODAY:
-          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-          break;
         case FilterPeriod.WEEK:
           startDate = new Date(now);
           startDate.setDate(now.getDate() - now.getDay()); // Domingo de esta semana
@@ -202,14 +221,20 @@ const App: React.FC = () => {
         return txDate >= startDate && txDate <= endDate;
       };
       
-      filteredIncomeAndAdjustments = incomeAndAdjustments.filter(filterByDate);
-      filteredExpenses = expenses.filter(filterByDate);
+      reportIncomeAndAdjustments = incomeAndAdjustments.filter(filterByDate);
+      reportExpenses = expenses.filter(filterByDate);
     }
     
     // Generar el PDF con las transacciones filtradas
+    console.log('Generando reporte con:', {
+      ingresos: reportIncomeAndAdjustments.length,
+      gastos: reportExpenses.length,
+      periodo: filterPeriod
+    });
+    
     generateFinancialReportPDF(
-      filteredIncomeAndAdjustments, 
-      filteredExpenses,           
+      reportIncomeAndAdjustments, 
+      reportExpenses,           
       financialSummary,
       filterPeriod,
       customDateRange,
