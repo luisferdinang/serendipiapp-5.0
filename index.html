@@ -4,7 +4,16 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1e40af">
+  <meta name="description" content="Aplicación de gestión financiera personal">
   <title>Serendipia Studio Finanzas 1.0</title>
+  
+  <!-- PWA Meta Tags -->
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/pwa-192x192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Serendipia">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body {
@@ -54,5 +63,20 @@
 <body class="bg-slate-900 text-slate-200">
   <div id="root"></div>
   <script type="module" src="/index.tsx"></script>
+  <script>
+  // Registrar el service worker
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').then(
+        (registration) => {
+          console.log('ServiceWorker registration successful');
+        },
+        (err) => {
+          console.log('ServiceWorker registration failed: ', err);
+        }
+      );
+    });
+  }
+</script>
 </body>
 </html>
