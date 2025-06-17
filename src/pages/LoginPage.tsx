@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../../firebase';
 import { LockClosedIcon, EnvelopeIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline';
@@ -28,11 +28,26 @@ const LoginPage: React.FC = () => {
       return;
     }
 
+    // Evitar múltiples intentos de inicio de sesión simultáneos
+    if (isLoading) return;
+    
     setIsLoading(true);
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      navigate('/');
+      // Limpiar cualquier estado previo
+      setError('');
+      
+      // Intentar iniciar sesión
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      
+      // Esperar un momento para asegurar que el estado se actualice
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Verificar que el usuario esté autenticado antes de redirigir
+      if (userCredential.user) {
+        console.log('✅ Inicio de sesión exitoso, redirigiendo...');
+        navigate('/', { replace: true });
+      }
     } catch (err: any) {
       console.error('Error al iniciar sesión:', err);
       
@@ -43,6 +58,8 @@ const LoginPage: React.FC = () => {
         errorMessage = 'Demasiados intentos. Por favor, intente más tarde o restablezca su contraseña.';
       } else if (err.code === 'auth/user-disabled') {
         errorMessage = 'Esta cuenta ha sido deshabilitada';
+      } else if (err.code === 'auth/network-request-failed') {
+        errorMessage = 'Error de conexión. Por favor, verifica tu conexión a internet.';
       }
       
       setError(errorMessage);

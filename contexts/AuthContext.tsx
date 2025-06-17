@@ -44,6 +44,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     console.log('🔐 [AuthProvider] Configurando observador de autenticación...');
     
+    // Configurar el estado inicial de carga
+    setLoading(true);
+    
     const unsubscribe = onAuthStateChanged(
       auth,
       async (user) => {
@@ -61,18 +64,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 claims: idTokenResult.claims,
                 authTime: idTokenResult.authTime
               });
+              // Solo actualizamos el usuario si el token es válido
+              setCurrentUser(user);
             } catch (tokenError) {
               console.error('❌ [AuthProvider] Error obteniendo token:', tokenError);
-              setError('Error al verificar la sesión. Por favor, inicia sesión nuevamente.');
+              setError('La sesión ha expirado. Por favor, inicia sesión nuevamente.');
               await signOut();
               return;
             }
+          } else {
+            setCurrentUser(null);
           }
-          
-          setCurrentUser(user);
         } catch (error) {
           console.error('❌ [AuthProvider] Error en el observador de autenticación:', error);
           setError('Error al verificar la sesión. Por favor, recarga la página.');
+          setCurrentUser(null);
         } finally {
           setLoading(false);
         }
@@ -80,6 +86,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       (error) => {
         console.error('❌ [AuthProvider] Error en el observador de autenticación:', error);
         setError('Error de conexión. Por favor, verifica tu conexión a internet.');
+        setCurrentUser(null);
         setLoading(false);
       }
     );
