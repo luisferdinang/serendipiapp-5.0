@@ -62,6 +62,9 @@
 </head>
 <body class="bg-slate-900 text-slate-200">
   <div id="root"></div>
+  <button id="installButton" style="display: none; position: fixed; bottom: 20px; right: 20px; padding: 10px 20px; background-color: #1e40af; color: white; border: none; border-radius: 5px; cursor: pointer; z-index: 1000;">
+    Instalar App
+  </button>
   <script type="module" src="/index.tsx"></script>
   <script>
   // Registrar el service worker
@@ -77,6 +80,50 @@
       );
     });
   }
+
+  // Manejar el evento beforeinstallprompt
+  let deferredPrompt;
+  
+  window.addEventListener('beforeinstallprompt', (e) => {
+    // Prevenir que Chrome 67 y versiones anteriores muestren automáticamente el prompt
+    e.preventDefault();
+    // Guardar el evento para que pueda ser activado más tarde
+    deferredPrompt = e;
+    
+    // Mostrar un botón de instalación personalizado o lógica para mostrar el prompt
+    console.log('Puedes instalar esta aplicación');
+    // Opcional: Mostrar tu propio botón de instalación aquí
+    showInstallPromotion();
+  });
+
+  function showInstallPromotion() {
+    const installButton = document.getElementById('installButton');
+    if (installButton) {
+      installButton.style.display = 'block';
+      installButton.addEventListener('click', () => {
+        window.promptInstall();
+      });
+    }
+    console.log('Mostrar botón de instalación personalizado');
+  }
+
+  // Función para mostrar el prompt de instalación
+  window.promptInstall = () => {
+    if (deferredPrompt) {
+      // Mostrar el prompt de instalación
+      deferredPrompt.prompt();
+      // Esperar a que el usuario responda al prompt
+      deferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+          console.log('Usuario aceptó la instalación');
+        } else {
+          console.log('Usuario rechazó la instalación');
+        }
+        // Limpiar el prompt guardado ya que no se puede volver a usar
+        deferredPrompt = null;
+      });
+    }
+  };
 </script>
 </body>
 </html>
