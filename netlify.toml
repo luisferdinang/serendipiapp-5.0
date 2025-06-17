@@ -1,10 +1,12 @@
 [build]
-  command = "npm run build"
+  command = "npm install && npm run build"
   publish = "dist"
+  functions = "netlify/functions"
 
 [build.environment]
-  NODE_VERSION = "20"
-  NPM_FLAGS = "--version"
+  NODE_VERSION = "20.0.0"
+  NPM_VERSION = "10.0.0"
+  YARN_VERSION = "1.22.0"
 
 [[redirects]]
   from = "/*"
@@ -12,11 +14,8 @@
   status = 200
 
 [dev]
-  framework = "create-react-app"
-  command = "npm start"
+  framework = "vite"
+  command = "npm run dev"
   port = 3000
-  target = "."
-  publish = "."
-
-[functions]
-  node_bundler = "esbuild"
+  target = "dist"
+  publish = "dist"
