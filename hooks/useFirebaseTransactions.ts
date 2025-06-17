@@ -139,6 +139,7 @@ interface UseFirebaseTransactionsReturn {
   error: string | null;
   getPaymentMethodDetails: (method: PaymentMethod) => PaymentMethodOption;
   refreshData: () => Promise<void>;
+  getCurrentVenezuelaTime: () => string;
 }
 
 export const useFirebaseTransactions = (): UseFirebaseTransactionsReturn => {
@@ -295,46 +296,128 @@ export const useFirebaseTransactions = (): UseFirebaseTransactionsReturn => {
     }
   };
 
+  // Función para obtener la fecha actual en Venezuela (UTC-4)
+  const getVenezuelaDate = (): Date => {
+    // Usar toLocaleString con la zona horaria de América/Caracas
+    const options = { timeZone: 'America/Caracas' };
+    const dateStr = new Date().toLocaleString('en-US', options);
+    return new Date(dateStr);
+  };
+
+  // Función para normalizar fechas a inicio del día (sin horas, minutos, segundos)
+  const normalizeDate = (date: Date): string => {
+    const d = new Date(date);
+    // Formato YYYY-MM-DD para comparación directa de cadenas
+    return d.toISOString().split('T')[0];
+  };
+  
+  // Función para formatear fecha a YYYY-MM-DD
+  const formatDateToYMD = (date: Date): string => {
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  // Función para formatear fecha y hora para mostrar
+  const formatVenezuelaDateTime = (date: Date): string => {
+    return date.toLocaleString('es-VE', { 
+      timeZone: 'America/Caracas',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true
+    });
+  };
+
   // Filtra las transacciones según el período seleccionado
   const filterTransactionsByPeriod = (txs: Transaction[]) => {
-    const now = new Date();
-    const startDate = new Date(customDateRange.startDate);
-    const endDate = new Date(customDateRange.endDate);
-    endDate.setHours(23, 59, 59, 999);
+    // Si es TODOS, retornar todas las transacciones
+    if (filterPeriod === FilterPeriod.ALL) {
+      return txs;
+    }
+
+    // Obtener la fecha actual en Venezuela
+    const now = getVenezuelaDate();
+    const todayStr = formatDateToYMD(now);
+    
+    // Solo mostrar logs una vez al cambiar de filtro
+    const logKey = `last-log-${filterPeriod}-${todayStr}`;
+    const lastLog = sessionStorage.getItem(logKey);
+    
+    if (!lastLog) {
+      console.log(`Aplicando filtro: ${filterPeriod}`, { fechaActual: todayStr });
+      sessionStorage.setItem(logKey, 'true');
+    }
+
+    // Si es HOY, comparar directamente los strings YYYY-MM-DD
+    if (filterPeriod === FilterPeriod.TODAY) {
+      return txs.filter(tx => {
+        const txDateStr = tx.date.split('T')[0];
+        return txDateStr === todayStr;
+      });
+    }
+
+    // Para los demás períodos, usar fechas completas
+    let startDate = new Date(0); // Fecha muy antigua por defecto
+    let endDate = new Date();
+
+    switch (filterPeriod) {
+      case FilterPeriod.WEEK: {
+        const today = new Date(now);
+        const day = today.getDay();
+        const diff = today.getDate() - day + (day === 0 ? -6 : 1); // Ajuste para que la semana empiece el lunes
+        startDate = new Date(today);
+        startDate.setDate(diff);
+        startDate.setHours(0, 0, 0, 0);
+        break;
+      }
+      case FilterPeriod.MONTH: {
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        startDate.setHours(0, 0, 0, 0);
+        endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0); // Último día del mes
+        endDate.setHours(23, 59, 59, 999);
+        break;
+      }
+      case FilterPeriod.CUSTOM: {
+        if (customDateRange.startDate && customDateRange.endDate) {
+          startDate = new Date(customDateRange.startDate);
+          endDate = new Date(customDateRange.endDate);
+          endDate.setHours(23, 59, 59, 999);
+        }
+        break;
+      }
+    }
+
+    // Solo mostrar logs de rango una vez
+    if (!sessionStorage.getItem(`range-log-${filterPeriod}`)) {
+      console.log(`Rango de fechas para ${filterPeriod}:`, {
+        inicio: startDate.toISOString(),
+        fin: endDate.toISOString()
+      });
+      sessionStorage.setItem(`range-log-${filterPeriod}`, 'true');
+    }
 
     return txs.filter(tx => {
       const txDate = new Date(tx.date);
-      
-      switch (filterPeriod) {
-        case FilterPeriod.TODAY:
-          return txDate.toDateString() === now.toDateString();
-        case FilterPeriod.WEEK: {
-          const weekAgo = new Date();
-          weekAgo.setDate(now.getDate() - 7);
-          return txDate >= weekAgo && txDate <= now;
-        }
-        case FilterPeriod.MONTH: {
-          const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-          return txDate >= firstDayOfMonth && txDate <= now;
-        }
-        case FilterPeriod.CUSTOM:
-          return txDate >= startDate && txDate <= endDate;
-        case FilterPeriod.ALL:
-        default:
-          return true;
-      }
+      return txDate >= startDate && txDate <= endDate;
     });
   };
 
   const filteredTransactions = filterTransactionsByPeriod(transactions);
   
-  // Actualizar el resumen financiero cuando cambian las transacciones o la tasa de cambio
+  // Actualizar el resumen financiero cuando cambian las transacciones, el filtro o la tasa de cambio
   useEffect(() => {
     if (transactions.length > 0) {
-      const summary = calculateFinancialSummary(transactions, exchangeRate);
+      const transactionsToUse = filterPeriod === FilterPeriod.ALL ? transactions : filteredTransactions;
+      const summary = calculateFinancialSummary(transactionsToUse, exchangeRate);
       setFinancialSummary(summary);
     }
-  }, [transactions, exchangeRate, setFinancialSummary]);
+  }, [transactions, filteredTransactions, filterPeriod, exchangeRate]);
 
   // Función para recargar los datos manualmente
   const refreshData = useCallback(async () => {
@@ -361,11 +444,20 @@ export const useFirebaseTransactions = (): UseFirebaseTransactionsReturn => {
     }
   }, [transactions, exchangeRate]);
 
+  // Filtrar transacciones por tipo
+  const filteredIncomeAndAdjustments = filteredTransactions.filter(tx => 
+    tx.type === TransactionType.INCOME || tx.type === TransactionType.ADJUSTMENT
+  );
+  
+  const filteredExpenses = filteredTransactions.filter(tx => 
+    tx.type === TransactionType.EXPENSE
+  );
+
   return {
     transactions: filteredTransactions,
     allTransactions: transactions,
-    incomeAndAdjustments: transactions.filter(tx => tx.type !== TransactionType.EXPENSE),
-    expenses: transactions.filter(tx => tx.type === TransactionType.EXPENSE),
+    incomeAndAdjustments: filteredIncomeAndAdjustments,
+    expenses: filteredExpenses,
     financialSummary,
     filterPeriod,
     setFilterPeriod,
@@ -386,6 +478,7 @@ export const useFirebaseTransactions = (): UseFirebaseTransactionsReturn => {
         accountType: 'cash'
       };
     },
-    refreshData: loadInitialData,
+    refreshData,
+    getCurrentVenezuelaTime: () => formatVenezuelaDateTime(getVenezuelaDate()),
   };
 };

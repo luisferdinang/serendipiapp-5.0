@@ -16,6 +16,7 @@ import { generateFinancialReportPDF } from './services/pdfReportService';
 import { DashboardTab } from './components/DashboardTab'; // Import DashboardTab
 import { PAYMENT_METHOD_OPTIONS, CURRENCY_OPTIONS } from './constants'; // Import constants for DashboardTab
 import { useFirebaseTransactions } from './hooks/useFirebaseTransactions';
+import { VenezuelaTime } from './components/VenezuelaTime';
 
 const PlusIcon: React.FC<{ className?: string }> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={`w-5 h-5 ${className}`}>
@@ -98,7 +99,8 @@ const App: React.FC = () => {
     isLoading,
     error,
     getPaymentMethodDetails,
-    refreshData
+    refreshData,
+    getCurrentVenezuelaTime
   } = useFirebaseTransactions();
 
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
@@ -371,6 +373,7 @@ const App: React.FC = () => {
       <footer className="text-center p-6 text-slate-500 border-t border-slate-700/50 mt-12">
         <p>&copy; {new Date().getFullYear()} Serendipia Studio. Todos los derechos reservados.</p>
         <p className="text-xs mt-1">Hecho con amor y código.</p>
+        <VenezuelaTime getCurrentVenezuelaTime={getCurrentVenezuelaTime} />
       </footer>
     </div>
   );
