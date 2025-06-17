@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../../firebase';
 import { LockClosedIcon, EnvelopeIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline';
@@ -12,7 +11,6 @@ const LoginPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isResetPassword, setIsResetPassword] = useState(false);
   const [resetSent, setResetSent] = useState(false);
-  const navigate = useNavigate();
 
   useEffect(() => {
     // Limpiar errores al cambiar entre login y reset
@@ -40,13 +38,11 @@ const LoginPage: React.FC = () => {
       // Intentar iniciar sesión
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
-      // Esperar un momento para asegurar que el estado se actualice
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
       // Verificar que el usuario esté autenticado antes de redirigir
       if (userCredential.user) {
         console.log('✅ Inicio de sesión exitoso, redirigiendo...');
-        navigate('/', { replace: true });
+        // Usar window.location.href para forzar una recarga completa
+        window.location.href = '/';
       }
     } catch (err: any) {
       console.error('Error al iniciar sesión:', err);
