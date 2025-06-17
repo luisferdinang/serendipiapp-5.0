@@ -25,6 +25,68 @@ const TRANSACTIONS_COLLECTION = 'transactions';
 const EXCHANGE_RATES_COLLECTION = 'exchangeRates';
 
 export const getTransactions = async (userId: string): Promise<Transaction[]> => {
+  console.log('🔍 [getTransactions] Obteniendo todas las transacciones');
+  
+  // Verificar autenticación pero no filtrar por userId
+  if (!userId) {
+    console.error('❌ [getTransactions] Error: Usuario no autenticado');
+    return [];
+  }
+  
+  try {
+    const transactionsRef = collection(db, TRANSACTIONS_COLLECTION);
+    console.log('🔍 [getTransactions] Construyendo consulta para userId:', userId);
+    
+    // Consulta todas las transacciones ordenadas por fecha
+    const q = query(
+      transactionsRef,
+      orderBy('date', 'desc')
+    );
+    
+    console.log('🔍 [getTransactions] Ejecutando consulta...');
+    const querySnapshot = await getDocs(q);
+    
+    console.log(`✅ [getTransactions] Consulta completada. Encontrados ${querySnapshot.docs.length} documentos`);
+    
+    if (querySnapshot.empty) {
+      console.log('ℹ️ [getTransactions] No se encontraron transacciones para el usuario');
+      return [];
+    }
+    
+    const transactions = querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      
+        // Validar y formatear los datos
+      const transaction: Transaction = {
+        id: doc.id,
+        userId: data.userId || userId, // Usar el userId del parámetro si no está en los datos
+        description: data.description || 'Sin descripción',
+        amount: typeof data.amount === 'number' ? data.amount : (parseFloat(data.amount) || 0),
+        quantity: data.quantity || 1,
+        unitPrice: data.unitPrice || 0,
+        currency: data.currency || Currency.BS,
+        type: data.type || TransactionType.EXPENSE,
+        date: data.date || new Date().toISOString().split('T')[0],
+        paymentMethods: Array.isArray(data.paymentMethods) 
+          ? data.paymentMethods.map((pm: any) => ({
+              method: pm.method || PaymentMethod.EFECTIVO_BS,
+              amount: typeof pm.amount === 'number' ? pm.amount : (parseFloat(pm.amount) || 0)
+            }))
+          : [],
+        category: data.category || '',
+        notes: data.notes || '',
+        createdAt: data.createdAt?.toDate?.() || new Date(),
+        updatedAt: data.updatedAt?.toDate?.() || new Date()
+      };
+      
+      return transaction;
+    });
+    
+    return transactions;
+  } catch (error) {
+    console.error('❌ [getTransactions] Error al cargar transacciones:', error);
+    return [];
+  }
   try {
     console.log('🔍 [getTransactions] Obteniendo transacciones para el usuario ID:', userId);
     
@@ -71,8 +133,10 @@ export const getTransactions = async (userId: string): Promise<Transaction[]> =>
         return 1; // Valor por defecto para cualquier otro caso
       })();
       
+      // Asegurarse de que todos los campos requeridos estén presentes
       const transaction: Transaction = {
         id: doc.id,
+        userId: data.userId || '', // Asegurar que userId esté presente
         description: data.description || 'Sin descripción',
         unitPrice: data.unitPrice || amount, // Usar unitPrice si existe, de lo contrario usar amount
         quantity: quantity,
@@ -86,8 +150,10 @@ export const getTransactions = async (userId: string): Promise<Transaction[]> =>
               amount: typeof pm.amount === 'number' ? pm.amount : (parseFloat(pm.amount as string) || 0)
             }))
           : [],
-        category: data.category,
-        notes: data.notes
+        category: data.category || '',
+        notes: data.notes || '',
+        createdAt: data.createdAt?.toDate?.() || new Date(),
+        updatedAt: data.updatedAt?.toDate?.() || new Date()
       };
       
       return transaction;
@@ -108,7 +174,54 @@ export const getTransactions = async (userId: string): Promise<Transaction[]> =>
   }
 };
 
-export const addTransaction = async (transactionData: Omit<Transaction, 'id'>, userId: string): Promise<string> => {
+interface TransactionInput {
+  description: string;
+  unitPrice: number;
+  quantity: number;
+  amount: number;
+  currency: Currency;
+  type: TransactionType;
+  date: string;
+  paymentMethods: PaymentDetail[];
+  category?: string;
+  notes?: string;
+}
+
+export const addTransaction = async (transactionData: TransactionInput, userId: string): Promise<string> => {
+  console.log('➕ [addTransaction] Iniciando con userId:', userId);
+  console.log('📝 Datos de la transacción:', JSON.stringify(transactionData, null, 2));
+  
+  if (!userId) {
+    const errorMsg = 'Error: userId no proporcionado';
+    console.error('❌', errorMsg);
+    throw new Error(errorMsg);
+  }
+
+  try {
+    // Asegurarse de que el userId esté incluido en los datos
+    const { category, notes, ...restData } = transactionData;
+    const transactionWithUser = {
+      ...restData,
+      userId: userId,
+      category: category || '',
+      notes: notes || '',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    console.log('📤 [addTransaction] Guardando transacción en Firestore...');
+    const docRef = await addDoc(collection(db, TRANSACTIONS_COLLECTION), {
+      ...transactionWithUser,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+    
+    console.log('✅ [addTransaction] Transacción guardada con ID:', docRef.id);
+    return docRef.id;
+  } catch (error) {
+    console.error('❌ [addTransaction] Error al guardar transacción:', error);
+    throw error;
+  }
   console.log('Iniciando addTransaction con datos:', { transactionData, userId });
   
   try {
@@ -162,16 +275,24 @@ export const addTransaction = async (transactionData: Omit<Transaction, 'id'>, u
     };
 
     // Solo agregar campos opcionales si tienen valor
-    if (transactionData.quantity !== undefined && transactionData.quantity !== null) {
+    if (typeof transactionData.quantity !== 'undefined' && transactionData.quantity !== null) {
       transactionToSave.quantity = Number(transactionData.quantity);
     }
     
-    if (transactionData.category?.trim()) {
-      transactionToSave.category = transactionData.category.trim();
+    // Manejar category de manera segura
+    const category = 'category' in transactionData && typeof transactionData.category === 'string' 
+      ? transactionData.category.trim() 
+      : '';
+    if (category) {
+      transactionToSave.category = category;
     }
     
-    if (transactionData.notes?.trim()) {
-      transactionToSave.notes = transactionData.notes.trim();
+    // Manejar notes de manera segura
+    const notes = 'notes' in transactionData && typeof transactionData.notes === 'string'
+      ? transactionData.notes.trim() 
+      : '';
+    if (notes) {
+      transactionToSave.notes = notes;
     }
     
     console.log('Datos validados de la transacción a guardar:', transactionToSave);
@@ -205,6 +326,23 @@ export const addTransaction = async (transactionData: Omit<Transaction, 'id'>, u
 };
 
 export const updateTransaction = async (id: string, transaction: Partial<Transaction>): Promise<void> => {
+  console.log('🔄 [updateTransaction] Actualizando transacción ID:', id);
+  
+  if (!id) {
+    throw new Error('El ID de la transacción es requerido');
+  }
+  
+  try {
+    const transactionRef = doc(db, TRANSACTIONS_COLLECTION, id);
+    await updateDoc(transactionRef, {
+      ...transaction,
+      updatedAt: serverTimestamp()
+    });
+    console.log('✅ [updateTransaction] Transacción actualizada correctamente');
+  } catch (error) {
+    console.error('❌ [updateTransaction] Error al actualizar transacción:', error);
+    throw error;
+  }
   try {
     const transactionRef = doc(db, TRANSACTIONS_COLLECTION, id);
     await updateDoc(transactionRef, {
@@ -218,6 +356,19 @@ export const updateTransaction = async (id: string, transaction: Partial<Transac
 };
 
 export const deleteTransaction = async (id: string): Promise<void> => {
+  console.log('🗑️ [deleteTransaction] Eliminando transacción ID:', id);
+  
+  if (!id) {
+    throw new Error('El ID de la transacción es requerido');
+  }
+  
+  try {
+    await deleteDoc(doc(db, TRANSACTIONS_COLLECTION, id));
+    console.log('✅ [deleteTransaction] Transacción eliminada correctamente');
+  } catch (error) {
+    console.error('❌ [deleteTransaction] Error al eliminar transacción:', error);
+    throw error;
+  }
   try {
     const transactionRef = doc(db, TRANSACTIONS_COLLECTION, id);
     await deleteDoc(transactionRef);

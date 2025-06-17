@@ -164,9 +164,50 @@ const App: React.FC = () => {
   };
 
   const handleGenerateReport = () => {
+    // Filtrar transacciones según el período seleccionado
+    let filteredIncomeAndAdjustments = [...incomeAndAdjustments];
+    let filteredExpenses = [...expenses];
+    
+    // Aplicar filtro de fecha según el período seleccionado
+    if (filterPeriod !== FilterPeriod.ALL) {
+      const now = new Date();
+      let startDate: Date;
+      let endDate: Date = new Date();
+      
+      switch (filterPeriod) {
+        case FilterPeriod.TODAY:
+          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          break;
+        case FilterPeriod.WEEK:
+          startDate = new Date(now);
+          startDate.setDate(now.getDate() - now.getDay()); // Domingo de esta semana
+          startDate.setHours(0, 0, 0, 0);
+          break;
+        case FilterPeriod.MONTH:
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+          break;
+        case FilterPeriod.CUSTOM:
+          startDate = new Date(customDateRange.startDate);
+          endDate = new Date(customDateRange.endDate);
+          endDate.setHours(23, 59, 59, 999);
+          break;
+        default:
+          startDate = new Date(0); // Todas las fechas
+      }
+      
+      const filterByDate = (tx: Transaction) => {
+        const txDate = new Date(tx.date);
+        return txDate >= startDate && txDate <= endDate;
+      };
+      
+      filteredIncomeAndAdjustments = incomeAndAdjustments.filter(filterByDate);
+      filteredExpenses = expenses.filter(filterByDate);
+    }
+    
+    // Generar el PDF con las transacciones filtradas
     generateFinancialReportPDF(
-      incomeAndAdjustments, 
-      expenses,           
+      filteredIncomeAndAdjustments, 
+      filteredExpenses,           
       financialSummary,
       filterPeriod,
       customDateRange,

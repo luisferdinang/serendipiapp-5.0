@@ -1,15 +1,45 @@
-
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable'; // Import for side effects, it extends jsPDF.prototype
-import { Transaction, FinancialSummaryData, FilterPeriod, CustomDateRange, Currency, PaymentMethod, PaymentMethodOption } from '../types';
+import autoTable from 'jspdf-autotable';
+import { Transaction, FinancialSummaryData, FilterPeriod, CustomDateRange, Currency } from '../types';
 import { PAYMENT_METHOD_OPTIONS, FILTER_PERIOD_OPTIONS, APP_TITLE } from '../constants';
 
-// Extend jsPDF with autoTable - this is often needed for TypeScript if types are not perfectly aligned
+// Extender la interfaz de jsPDF para incluir las propiedades que necesitamos
 declare module 'jspdf' {
   interface jsPDF {
     autoTable: (options: any) => jsPDF;
+    lastAutoTable?: {
+      finalY?: number;
+    };
   }
 }
+
+// Configuración de estilos
+const styles = {
+  title: {
+    fontSize: 18,
+    fontStyle: 'bold' as const,
+    textColor: [0, 0, 0] as [number, number, number],
+    lineHeight: 1.2,
+  },
+  subtitle: {
+    fontSize: 14,
+    fontStyle: 'bold' as const,
+    textColor: [51, 51, 51] as [number, number, number],
+  },
+  header: {
+    fillColor: [41, 128, 185] as [number, number, number],
+    textColor: [255, 255, 255] as [number, number, number],
+    fontStyle: 'bold' as const,
+  },
+  row: {
+    textColor: [0, 0, 0] as [number, number, number],
+    fontSize: 10,
+  },
+  footer: {
+    fontSize: 10,
+    textColor: [100, 100, 100] as [number, number, number],
+  },
+};
 
 const getFilterPeriodText = (filterPeriod: FilterPeriod, customDateRange: CustomDateRange): string => {
   const option = FILTER_PERIOD_OPTIONS.find(opt => opt.id === filterPeriod);
@@ -26,15 +56,141 @@ const formatCurrencyForPdf = (value: number, currency: Currency): string => {
 };
 
 const getPaymentMethodsString = (transaction: Transaction): string => {
-    if (!transaction.paymentMethods || transaction.paymentMethods.length === 0) return 'N/A';
-    return transaction.paymentMethods.map(pmDetail => {
-      const details = PAYMENT_METHOD_OPTIONS.find(opt => opt.id === pmDetail.method);
-      const amountStr = pmDetail.amount.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      return `${details ? details.label.replace(/\s*\([\w\.]+\)/, '') : pmDetail.method} (${amountStr})`; // Shorten label
-    }).join(', ');
+  if (!transaction.paymentMethods || transaction.paymentMethods.length === 0) return 'N/A';
+  return transaction.paymentMethods.map(pmDetail => {
+    const details = PAYMENT_METHOD_OPTIONS.find(opt => opt.id === pmDetail.method);
+    const amountStr = formatCurrencyForPdf(pmDetail.amount, transaction.currency);
+    return `${details ? details.label.replace(/\s*\([\w\.]+\)/, '') : pmDetail.method} (${amountStr})`;
+  }).join(', ');
 };
 
+// Función para agregar el encabezado a todas las páginas
+const addHeader = (doc: jsPDF, title: string): number => {
+  doc.setFontSize(styles.title.fontSize);
+  doc.setTextColor(...styles.title.textColor);
+  doc.setFont('helvetica', styles.title.fontStyle as any);
+  doc.text(title, doc.internal.pageSize.width / 2, 15, { align: 'center' });
+  
+  // Línea decorativa
+  doc.setDrawColor(41, 128, 185);
+  doc.setLineWidth(0.5);
+  doc.line(20, 20, doc.internal.pageSize.width - 20, 20);
+  
+  return 25; // Retorna la posición Y después del encabezado
+};
 
+// Función para agregar el pie de página
+const addFooter = (doc: jsPDF, pageNumber: number, totalPages: number): void => {
+  const pageSize = doc.internal.pageSize;
+  const pageHeight = pageSize.height || pageSize.getHeight();
+  
+  doc.setFontSize(styles.footer.fontSize);
+  doc.setTextColor(...styles.footer.textColor);
+  doc.setFont('helvetica', 'normal');
+  
+  const text = `Página ${pageNumber} de ${totalPages} • ${APP_TITLE}`;
+  const textWidth = doc.getTextWidth(text);
+  const textX = (pageSize.width - textWidth) / 2;
+  
+  doc.text(text, textX, pageHeight - 10);
+};
+
+// Función para crear una página con encabezado y pie de página
+const addNewPage = (doc: jsPDF, title: string, pageNumber: number, totalPages: number): number => {
+  doc.addPage();
+  const y = addHeader(doc, title);
+  addFooter(doc, pageNumber, totalPages);
+  return y;
+};
+
+// Función para agregar una tabla de transacciones
+const addTransactionTable = (
+  doc: jsPDF,
+  title: string,
+  data: Transaction[],
+  startY: number,
+  pageNumber: number,
+  totalPages: number
+): { y: number; pageNumber: number; totalPages: number } => {
+  const pageSize = doc.internal.pageSize;
+  const margin = 20;
+  
+  // Agregar título de la sección
+  doc.setFontSize(styles.subtitle.fontSize);
+  doc.setTextColor(...styles.subtitle.textColor);
+  doc.setFont('helvetica', styles.subtitle.fontStyle as any);
+  doc.text(title, margin, startY);
+  
+  // Configurar la tabla
+  const headers = [
+    'Fecha',
+    'Descripción',
+    'Categoría',
+    'Métodos de Pago',
+    'Monto'
+  ];
+  
+  // Preparar los datos de la tabla
+  const tableData = data.map(transaction => ({
+    date: new Date(transaction.date + 'T00:00:00').toLocaleDateString('es-VE'),
+    description: transaction.description,
+    category: transaction.category,
+    paymentMethods: getPaymentMethodsString(transaction),
+    amount: formatCurrencyForPdf(transaction.amount, transaction.currency)
+  }));
+  
+  // Crear la tabla con autoTable
+  autoTable(doc, {
+    startY: startY + 5,
+    head: [headers],
+    body: tableData.map(item => [
+      item.date,
+      item.description,
+      item.category,
+      item.paymentMethods,
+      item.amount
+    ]),
+    headStyles: {
+      fillColor: styles.header.fillColor,
+      textColor: styles.header.textColor,
+      fontStyle: styles.header.fontStyle,
+      fontSize: styles.row.fontSize
+    },
+    bodyStyles: {
+      textColor: styles.row.textColor,
+      fontSize: styles.row.fontSize
+    },
+    margin: { left: margin, right: margin },
+    styles: {
+      cellPadding: 3,
+      overflow: 'linebreak',
+      lineWidth: 0.1
+    },
+    columnStyles: {
+      0: { cellWidth: 'auto', minCellHeight: 10 },
+      1: { cellWidth: 'auto', minCellHeight: 10 },
+      2: { cellWidth: 'auto', minCellHeight: 10 },
+      3: { cellWidth: 'auto', minCellHeight: 10 },
+      4: { cellWidth: 'auto', minCellHeight: 10, halign: 'right' }
+    },
+    didDrawPage: () => {
+      // Actualizar el número de páginas total
+      totalPages = doc.getNumberOfPages();
+      // Actualizar el pie de página en cada página
+      const currentPage = doc.getCurrentPageInfo().pageNumber;
+      addFooter(doc, currentPage, totalPages);
+    }
+  });
+  
+  // Retornar la posición Y después de la tabla y los contadores de página
+  return {
+    y: (doc as any).lastAutoTable?.finalY || startY + 20,
+    pageNumber: doc.getCurrentPageInfo().pageNumber,
+    totalPages: doc.getNumberOfPages()
+  };
+};
+
+// Exportar la función como exportación nombrada
 export const generateFinancialReportPDF = (
   incomeAndAdjustments: Transaction[],
   expenses: Transaction[],
@@ -43,116 +199,133 @@ export const generateFinancialReportPDF = (
   customDateRange: CustomDateRange,
   exchangeRate: number
 ): void => {
-  const doc = new jsPDF();
-  const pageHeight = doc.internal.pageSize.height;
-  let currentY = 20; // Initial Y position
-
-  // Report Title
-  doc.setFontSize(18);
-  doc.text(`${APP_TITLE} - Informe Financiero`, doc.internal.pageSize.width / 2, currentY, { align: 'center' });
-  currentY += 10;
-
-  // Report Period
-  doc.setFontSize(12);
-  doc.text(`Período del Informe: ${getFilterPeriodText(filterPeriod, customDateRange)}`, 14, currentY);
-  currentY += 8;
-  doc.text(`Fecha de Generación: ${new Date().toLocaleDateString('es-VE', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`, 14, currentY);
-  currentY += 10;
-
-  // Financial Summary Section
-  doc.setFontSize(14);
-  doc.text('Resumen Financiero', 14, currentY);
-  currentY += 7;
-  doc.setFontSize(10);
-
-  const summaryData = [
-    [`Ingresos del Período (Bs.):`, formatCurrencyForPdf(summary.bs.periodIncome, Currency.BS)],
-    [`Gastos del Período (Bs.):`, formatCurrencyForPdf(summary.bs.periodExpenses, Currency.BS)],
-    [`Saldo Total Actual (Bs.):`, formatCurrencyForPdf(summary.bs.totalBalance, Currency.BS)],
-    [` `, ` `], // Spacer
-    [`Ingresos del Período (USD):`, formatCurrencyForPdf(summary.usd.periodIncome, Currency.USD)],
-    [`Gastos del Período (USD):`, formatCurrencyForPdf(summary.usd.periodExpenses, Currency.USD)],
-    [`Saldo Total Actual (USD):`, formatCurrencyForPdf(summary.usd.totalBalance, Currency.USD)],
-    [` `, ` `], // Spacer
-    [`Tasa de Cambio (Bs. por USD):`, exchangeRate.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })],
-  ];
-
-  doc.autoTable({
-    body: summaryData,
-    startY: currentY,
-    theme: 'plain',
-    styles: { fontSize: 10, cellPadding: 1.5 },
-    columnStyles: { 0: { fontStyle: 'bold' } },
-    didDrawPage: (data) => { currentY = data.cursor?.y || currentY; } // Update Y after table
+  // Crear un nuevo documento PDF en modo horizontal
+  const doc = new jsPDF({
+    orientation: 'landscape',
+    unit: 'mm',
+    format: 'a4'
   });
-  currentY += 5; // Add some space after summary
-
-  // Helper function to add transaction tables
-  const addTransactionTable = (title: string, data: Transaction[]) => {
-    if (currentY > pageHeight - 40) { // Check if new page is needed
-        doc.addPage();
-        currentY = 20;
+  
+  const title = `${APP_TITLE} - Informe Financiero`;
+  let currentY = addHeader(doc, title);
+  let pageNumber = 1;
+  let totalPages = 1;
+  
+  // Agregar pie de página a la primera página
+  addFooter(doc, pageNumber, totalPages);
+  
+  // Información del período y fecha de generación
+  doc.setFontSize(10);
+  doc.setTextColor(100, 100, 100);
+  doc.text(`Período: ${getFilterPeriodText(filterPeriod, customDateRange)}`, 20, currentY);
+  doc.text(`Generado el: ${new Date().toLocaleDateString('es-VE', { 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric', 
+    hour: '2-digit', 
+    minute: '2-digit' 
+  })}`, doc.internal.pageSize.width - 20, currentY, { align: 'right' });
+  
+  currentY += 10;
+  
+  // Sección de Resumen Financiero
+  doc.setFontSize(styles.subtitle.fontSize);
+  doc.setTextColor(...styles.subtitle.textColor);
+  doc.setFont('helvetica', styles.subtitle.fontStyle as any);
+  doc.text('Resumen Financiero', 20, currentY);
+  currentY += 10;
+  
+  // Tabla de resumen financiero
+  const summaryData = [
+    ['Concepto', 'Bolívares (Bs.)', 'Dólares (USD)'],
+    ['Ingresos del Período', 
+     formatCurrencyForPdf(summary.bs.periodIncome, Currency.BS), 
+     formatCurrencyForPdf(summary.usd.periodIncome, Currency.USD)],
+    ['Gastos del Período', 
+     formatCurrencyForPdf(summary.bs.periodExpenses, Currency.BS), 
+     formatCurrencyForPdf(summary.usd.periodExpenses, Currency.USD)],
+    ['Saldo Total Actual', 
+     formatCurrencyForPdf(summary.bs.totalBalance, Currency.BS), 
+     formatCurrencyForPdf(summary.usd.totalBalance, Currency.USD)],
+    ['Tasa de Cambio', 
+     `1 USD = ${exchangeRate.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs.`,
+     '']
+  ];
+  
+  autoTable(doc, {
+    startY: currentY,
+    head: [summaryData[0]],
+    body: summaryData.slice(1),
+    headStyles: {
+      fillColor: styles.header.fillColor,
+      textColor: styles.header.textColor,
+      fontStyle: styles.header.fontStyle,
+      fontSize: 10
+    },
+    bodyStyles: {
+      textColor: styles.row.textColor,
+      fontSize: 10
+    },
+    margin: { left: 20, right: 20 },
+    styles: {
+      cellPadding: 5,
+      overflow: 'linebreak',
+      lineWidth: 0.1
+    },
+    columnStyles: {
+      0: { fontStyle: 'bold' },
+      1: { halign: 'right' },
+      2: { halign: 'right' }
+    },
+    didDrawPage: () => {
+      // Actualizar el número de páginas total
+      totalPages = doc.getNumberOfPages();
+      // Actualizar el pie de página en cada página
+      const currentPage = doc.getCurrentPageInfo().pageNumber;
+      addFooter(doc, currentPage, totalPages);
     }
-    doc.setFontSize(14);
-    doc.text(title, 14, currentY);
-    currentY += 7;
-
-    const tableHeaders = ['Fecha', 'Descripción', 'Categoría', 'Métodos de Pago', 'Monto'];
-    const tableBody = data.map(t => [
-      new Date(t.date + 'T00:00:00').toLocaleDateString('es-VE'),
-      t.description,
-      t.category || '-',
-      getPaymentMethodsString(t),
-      `${t.type === 'expense' ? '-' : ''}${formatCurrencyForPdf(t.amount, t.currency)}`,
-    ]);
-
-    doc.autoTable({
-      head: [tableHeaders],
-      body: tableBody,
-      startY: currentY,
-      theme: 'striped', // or 'grid'
-      headStyles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: 'bold' },
-      styles: { fontSize: 8, cellPadding: 1.5 },
-      columnStyles: {
-        0: { cellWidth: 20 }, // Fecha
-        1: { cellWidth: 50 }, // Descripcion
-        2: { cellWidth: 25 }, // Categoria
-        3: { cellWidth: 50 }, // Metodos
-        4: { cellWidth: 25, halign: 'right' }, // Monto
-      },
-      didDrawPage: (data) => { currentY = data.cursor?.y || currentY; }
-    });
-    currentY += 10; // Space after table
-  };
-
+  });
+  
+  // Actualizar la posición Y después de la tabla
+  currentY = (doc as any).lastAutoTable?.finalY || currentY + 50;
+  
+  // Agregar tablas de transacciones si hay datos
   if (incomeAndAdjustments.length > 0) {
-      addTransactionTable('Historial de Ingresos y Ajustes', incomeAndAdjustments);
-  } else {
-      if (currentY > pageHeight - 20) { doc.addPage(); currentY = 20; }
-      doc.setFontSize(10);
-      doc.text('No hay ingresos o ajustes para el período seleccionado.', 14, currentY);
-      currentY += 10;
+    const result = addTransactionTable(
+      doc,
+      'Ingresos y Ajustes',
+      incomeAndAdjustments,
+      currentY + 10,
+      pageNumber,
+      totalPages
+    );
+    currentY = result.y;
+    pageNumber = result.pageNumber;
+    totalPages = result.totalPages;
+    
+    // Verificar si necesitamos una nueva página
+    if (currentY > doc.internal.pageSize.height - 50) {
+      currentY = addNewPage(doc, title, pageNumber + 1, totalPages + 1);
+      pageNumber++;
+      totalPages++;
+    }
   }
-
+  
   if (expenses.length > 0) {
-      addTransactionTable('Historial de Gastos', expenses);
-  } else {
-      if (currentY > pageHeight - 20) { doc.addPage(); currentY = 20; }
-      doc.setFontSize(10);
-      doc.text('No hay gastos para el período seleccionado.', 14, currentY);
-      currentY += 10;
+    const result = addTransactionTable(
+      doc,
+      'Gastos',
+      expenses,
+      currentY + 10,
+      pageNumber,
+      totalPages
+    );
+    currentY = result.y;
+    pageNumber = result.pageNumber;
+    totalPages = result.totalPages;
   }
-
-  // Add Page Numbers
-  const pageCount = doc.getNumberOfPages ? doc.getNumberOfPages() : (doc.internal.pages && doc.internal.pages.length -1) || 0;
-
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
-    doc.setFontSize(8);
-    doc.text(`Página ${i} de ${pageCount}`, doc.internal.pageSize.width - 25, doc.internal.pageSize.height - 10);
-  }
-
-  // Save the PDF
-  const dateSuffix = new Date().toISOString().slice(0,10).replace(/-/g,'');
-  doc.save(`InformeFinanciero_Serendipia_${dateSuffix}.pdf`);
+  
+  // Guardar el PDF
+  const dateSuffix = new Date().toISOString().split('T')[0];
+  doc.save(`Informe_Financiero_${dateSuffix}.pdf`);
 };

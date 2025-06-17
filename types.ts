@@ -31,6 +31,7 @@ export interface PaymentDetail {
 
 export interface TransactionBase {
   id: string;
+  userId: string; // ID del usuario propietario
   description: string;
   unitPrice: number; // Precio unitario
   quantity: number; // Cantidad
@@ -41,9 +42,15 @@ export interface TransactionBase {
   paymentMethods: PaymentDetail[]; // Multiple payment methods
   category?: string; // Optional category for the transaction
   notes?: string; // Optional additional notes
+  createdAt?: Date; // Fecha de creación
+  updatedAt?: Date; // Fecha de última actualización
 }
 
-export type Transaction = TransactionBase;
+export interface Transaction extends Omit<TransactionBase, 'createdAt' | 'updatedAt'> {
+  id: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 export enum FilterPeriod {
   ALL = 'all',
