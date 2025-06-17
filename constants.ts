@@ -1,6 +1,6 @@
 import { PaymentMethod, Currency, PaymentMethodOption, FilterPeriod } from './types';
 
-export const APP_TITLE = "Serendipia Studio Finanzas";
+export const APP_TITLE = "Serendipia Studio Finanzas 1.0";
 
 export const PAYMENT_METHOD_OPTIONS: PaymentMethodOption[] = [
   { id: PaymentMethod.PAGO_MOVIL_BS, label: 'Pago Móvil (Bs.)', currency: Currency.BS, accountType: 'bank' },
