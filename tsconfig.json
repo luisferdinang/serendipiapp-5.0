@@ -25,8 +25,10 @@
     "noUncheckedSideEffectImports": true,
 
     "paths": {
-      "@/*" :  ["./*"]
+      "@/*": ["./*"],
+      "@lib/*": ["./lib/*"]
     },
+    "baseUrl": ".",
     "types": ["vite/client", "vite-plugin-pwa/client"]
   }
 }

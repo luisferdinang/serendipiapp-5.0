@@ -198,68 +198,26 @@ export const addTransaction = async (transactionData: TransactionInput, userId: 
   }
 
   try {
-    // Asegurarse de que el userId esté incluido en los datos
-    const { category, notes, ...restData } = transactionData;
-    const transactionWithUser = {
-      ...restData,
-      userId: userId,
-      category: category || '',
-      notes: notes || '',
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-
-    console.log('📤 [addTransaction] Guardando transacción en Firestore...');
-    const docRef = await addDoc(collection(db, TRANSACTIONS_COLLECTION), {
-      ...transactionWithUser,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
-    });
-    
-    console.log('✅ [addTransaction] Transacción guardada con ID:', docRef.id);
-    return docRef.id;
-  } catch (error) {
-    console.error('❌ [addTransaction] Error al guardar transacción:', error);
-    throw error;
-  }
-  console.log('Iniciando addTransaction con datos:', { transactionData, userId });
-  
-  try {
-    // Validar que userId existe
-    if (!userId) {
-      const errorMsg = 'Se requiere un ID de usuario para agregar una transacción';
-      console.error(errorMsg);
-      throw new Error(errorMsg);
-    }
-    
     // Validar campos requeridos
     if (!transactionData.description?.trim()) {
-      const errorMsg = 'La descripción es requerida';
-      console.error(errorMsg);
-      throw new Error(errorMsg);
+      throw new Error('La descripción es requerida');
     }
     
     const amount = Number(transactionData.amount);
     if (isNaN(amount) || amount <= 0) {
-      const errorMsg = 'El monto debe ser un número mayor a cero';
-      console.error(errorMsg);
-      throw new Error(errorMsg);
+      throw new Error('El monto debe ser un número mayor a cero');
     }
     
     if (!Object.values(Currency).includes(transactionData.currency as Currency)) {
-      const errorMsg = `Moneda no válida: ${transactionData.currency}`;
-      console.error(errorMsg);
-      throw new Error(errorMsg);
+      throw new Error(`Moneda no válida: ${transactionData.currency}`);
     }
     
     if (!Object.values(TransactionType).includes(transactionData.type as TransactionType)) {
-      const errorMsg = `Tipo de transacción no válido: ${transactionData.type}`;
-      console.error(errorMsg);
-      throw new Error(errorMsg);
+      throw new Error(`Tipo de transacción no válido: ${transactionData.type}`);
     }
-    
+
     // Preparar los datos para Firestore
-    const transactionToSave: Record<string, any> = {
+    const transactionToSave = {
       description: transactionData.description.trim(),
       amount: amount,
       currency: transactionData.currency,
@@ -269,31 +227,17 @@ export const addTransaction = async (transactionData: TransactionInput, userId: 
         method: pm.method,
         amount: Number(pm.amount) || 0
       })),
+      category: transactionData.category || '',
+      notes: transactionData.notes || '',
       userId: userId,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     };
 
-    // Solo agregar campos opcionales si tienen valor
-    if (typeof transactionData.quantity !== 'undefined' && transactionData.quantity !== null) {
-      transactionToSave.quantity = Number(transactionData.quantity);
-    }
-    
-    // Manejar category de manera segura
-    const category = 'category' in transactionData && typeof transactionData.category === 'string' 
-      ? transactionData.category.trim() 
-      : '';
-    if (category) {
-      transactionToSave.category = category;
-    }
-    
-    // Manejar notes de manera segura
-    const notes = 'notes' in transactionData && typeof transactionData.notes === 'string'
-      ? transactionData.notes.trim() 
-      : '';
-    if (notes) {
-      transactionToSave.notes = notes;
-    }
+    console.log('📤 [addTransaction] Guardando transacción en Firestore...', {
+      transactionData: transactionToSave,
+      userId
+    });
     
     console.log('Datos validados de la transacción a guardar:', transactionToSave);
     

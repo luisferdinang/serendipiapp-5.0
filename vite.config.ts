@@ -1,13 +1,20 @@
 import path from 'path';
 import { defineConfig, loadEnv } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
+import { fileURLToPath } from 'url';
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     return {
       define: {
-        'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
+        'import.meta.env.VITE_GEMINI_API_KEY': JSON.stringify(env.VITE_GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY),
+        'process.env': {}
+      },
+      resolve: {
+        alias: {
+          '@': path.resolve(__dirname, './src'),
+          '@lib': path.resolve(__dirname, './lib')
+        }
       },
       plugins: [
         VitePWA({
@@ -56,11 +63,7 @@ export default defineConfig(({ mode }) => {
           }
         })
       ],
-      resolve: {
-        alias: {
-          '@': path.resolve(__dirname, '.'),
-        }
-      },
+
       build: {
         target: 'esnext',
         sourcemap: mode !== 'production'

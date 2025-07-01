@@ -23,18 +23,11 @@ const formatDateForInput = (date: Date): string => {
   return `${year}-${month}-${day}`;
 };
 
-const calculateFinancialSummary = (transactions: Transaction[], exchangeRate: number): FinancialSummaryData => {
-  const now = new Date();
-  const currentMonth = now.getMonth();
-  const currentYear = now.getFullYear();
+// Función para calcular el resumen financiero basado en las transacciones proporcionadas
+const calculateFinancialSummary = (transactions: Transaction[]): FinancialSummaryData => {
+  console.log(`[calculateFinancialSummary] Iniciando cálculo con ${transactions.length} transacciones`);
 
-  // Filtra transacciones del mes en curso
-  const currentMonthTransactions = transactions.filter(tx => {
-    const txDate = new Date(tx.date);
-    return txDate.getMonth() === currentMonth && txDate.getFullYear() === currentYear;
-  });
-
-  // Inicializar acumuladores
+  // Inicializar resumen financiero
   const summary: FinancialSummaryData = {
     bs: {
       periodIncome: 0,
@@ -52,50 +45,98 @@ const calculateFinancialSummary = (transactions: Transaction[], exchangeRate: nu
     },
   };
 
-  // Procesar transacciones del mes
-  currentMonthTransactions.forEach(tx => {
-    const amount = tx.amount || 0;
-    const isAdjustment = tx.type === TransactionType.ADJUSTMENT;
-    const isIncome = tx.type === TransactionType.INCOME;
-    const isExpense = tx.type === TransactionType.EXPENSE;
-    
-    if (tx.currency === Currency.BS) {
-      // Para ajustes, no sumamos a ingresos ni gastos, solo actualizamos los saldos
-      if (isIncome) {
-        summary.bs.periodIncome += amount;
-      } else if (isExpense) {
-        summary.bs.periodExpenses += amount;
+  let processedCount = 0;
+  let skippedCount = 0;
+
+  // Procesar cada transacción
+  transactions.forEach((tx: Transaction, index: number) => {
+    try {
+      // Validar transacción
+      if (!tx) {
+        console.warn(`[${index}] Transacción es nula o indefinida`);
+        skippedCount++;
+        return;
       }
-      
-      // Actualizar saldos según método de pago
-      tx.paymentMethods.forEach(pm => {
-        if (pm.method === PaymentMethod.EFECTIVO_BS) {
-          // Para ajustes, el monto ya viene con el signo correcto
-          const adjustmentAmount = isAdjustment ? amount : (isIncome ? pm.amount : -pm.amount);
-          summary.bs.cashBalance += isAdjustment ? adjustmentAmount : (isIncome ? pm.amount : -pm.amount);
-        } else if (pm.method === PaymentMethod.PAGO_MOVIL_BS) {
-          const adjustmentAmount = isAdjustment ? amount : (isIncome ? pm.amount : -pm.amount);
-          summary.bs.bankBalance += isAdjustment ? adjustmentAmount : (isIncome ? pm.amount : -pm.amount);
-        }
-      });
-    } else if (tx.currency === Currency.USD) {
-      // Para ajustes, no sumamos a ingresos ni gastos, solo actualizamos los saldos
-      if (isIncome) {
-        summary.usd.periodIncome += amount;
-      } else if (isExpense) {
-        summary.usd.periodExpenses += amount;
+
+      // Validar monto
+      const amount = Number(tx.amount);
+      if (isNaN(amount)) {
+        console.warn(`[${index}] Transacción con monto inválido:`, tx);
+        skippedCount++;
+        return;
       }
+
+      // Establecer valores por defecto
+      const currency = tx.currency || Currency.BS;
+      const type = tx.type || TransactionType.EXPENSE;
+      const paymentMethod = tx.paymentMethods?.[0]?.method || 'EFECTIVO_BS';
       
-      // Actualizar saldos según método de pago
-      tx.paymentMethods.forEach(pm => {
-        if (pm.method === PaymentMethod.EFECTIVO_USD) {
-          const adjustmentAmount = isAdjustment ? amount : (isIncome ? pm.amount : -pm.amount);
-          summary.usd.cashBalance += isAdjustment ? adjustmentAmount : (isIncome ? pm.amount : -pm.amount);
-        } else if (pm.method === PaymentMethod.USDT) {
-          const adjustmentAmount = isAdjustment ? amount : (isIncome ? pm.amount : -pm.amount);
-          summary.usd.usdtBalance += isAdjustment ? adjustmentAmount : (isIncome ? pm.amount : -pm.amount);
+      // Mapear métodos de pago a los valores esperados
+      type PaymentMethodType = 'CASH' | 'BANK_TRANSFER' | 'PM' | 'USDT' | 'BINANCE';
+      const methodMap: Record<string, PaymentMethodType> = {
+        'EFECTIVO_BS': 'CASH',
+        'EFECTIVO_USD': 'CASH',
+        'PAGO_MOVIL_BS': 'PM',
+        'PM': 'PM',
+        'TRANSFERENCIA': 'BANK_TRANSFER',
+        'USDT': 'USDT',
+        'BINANCE': 'BINANCE'
+      };
+      
+      const method = methodMap[paymentMethod] || 'CASH';
+
+      // Determinar si es ingreso o gasto
+      const isIncome = type === TransactionType.INCOME || type === TransactionType.ADJUSTMENT;
+      const isExpense = type === TransactionType.EXPENSE;
+
+      // Log para depuración
+      const txInfo = `[${index}] ${isIncome ? 'INGRESO' : isExpense ? 'GASTO' : 'TIPO_DESCONOCIDO'} | ${currency} ${amount.toFixed(2)} | ${method} | ${tx.description || 'Sin descripción'}`;
+      console.log(txInfo);
+      
+      // Actualizar ingresos y gastos del período
+      if (isIncome) {
+        if (currency === Currency.BS) {
+          summary.bs.periodIncome += amount;
+          console.log(`Sumando a ingresos Bs.: ${amount}`);
+        } else {
+          summary.usd.periodIncome += amount;
+          console.log(`Sumando a ingresos USD: ${amount}`);
         }
-      });
+      } else if (isExpense) {
+        if (currency === Currency.BS) {
+          summary.bs.periodExpenses += amount;
+          console.log(`Sumando a gastos Bs.: ${amount}`);
+        } else {
+          summary.usd.periodExpenses += amount;
+          console.log(`Sumando a gastos USD: ${amount}`);
+        }
+      }
+
+      // Actualizar saldos según el método de pago
+      const amountToAdd = isIncome ? amount : -amount;
+      
+      if (currency === Currency.BS) {
+        if (method === 'CASH') {
+          summary.bs.cashBalance += amountToAdd;
+          console.log(`Actualizando efectivo Bs.: ${amountToAdd >= 0 ? '+' : ''}${amountToAdd}`);
+        } else if (method === 'BANK_TRANSFER' || method === 'PM') {
+          summary.bs.bankBalance += amountToAdd;
+          console.log(`Actualizando banco Bs.: ${amountToAdd >= 0 ? '+' : ''}${amountToAdd}`);
+        }
+      } else {
+        if (method === 'CASH') {
+          summary.usd.cashBalance += amountToAdd;
+          console.log(`Actualizando efectivo USD: ${amountToAdd >= 0 ? '+' : ''}${amountToAdd}`);
+        } else if (method === 'USDT' || method === 'BINANCE') {
+          summary.usd.usdtBalance += amountToAdd;
+          console.log(`Actualizando USDT: ${amountToAdd >= 0 ? '+' : ''}${amountToAdd}`);
+        }
+      }
+
+      processedCount++;
+    } catch (error) {
+      console.error(`[${index}] Error al procesar transacción:`, error);
+      skippedCount++;
     }
   });
 
@@ -103,20 +144,12 @@ const calculateFinancialSummary = (transactions: Transaction[], exchangeRate: nu
   summary.bs.totalBalance = summary.bs.cashBalance + summary.bs.bankBalance;
   summary.usd.totalBalance = summary.usd.cashBalance + summary.usd.usdtBalance;
 
-  // Asegurarse de que no haya valores negativos
-  Object.values(summary.bs).forEach((value, index) => {
-    if (typeof value === 'number') {
-      summary.bs[Object.keys(summary.bs)[index]] = Math.max(0, value);
-    }
-  });
-
-  Object.values(summary.usd).forEach((value, index) => {
-    if (typeof value === 'number') {
-      summary.usd[Object.keys(summary.usd)[index]] = Math.max(0, value);
-    }
-  });
-
-  console.log('Resumen financiero calculado:', summary);
+  // Mostrar resumen
+  console.log(`[calculateFinancialSummary] Procesamiento completado:`);
+  console.log(`- Transacciones procesadas: ${processedCount}`);
+  console.log(`- Transacciones omitidas: ${skippedCount}`);
+  console.log('Resumen financiero calculado:', JSON.stringify(summary, null, 2));
+  
   return summary;
 };
 
@@ -218,7 +251,7 @@ export const useFirebaseTransactions = (): UseFirebaseTransactionsReturn => {
       setExchangeRateState(storedRate || INITIAL_EXCHANGE_RATE);
       
       // Calcular resumen financiero
-      const summary = calculateFinancialSummary(storedTransactions || [], storedRate || INITIAL_EXCHANGE_RATE);
+      const summary = calculateFinancialSummary(storedTransactions || []);
       setFinancialSummary(summary);
     } catch (e) {
       setError("Error al cargar datos. Intenta de nuevo.");
@@ -304,12 +337,6 @@ export const useFirebaseTransactions = (): UseFirebaseTransactionsReturn => {
     return new Date(dateStr);
   };
 
-  // Función para normalizar fechas a inicio del día (sin horas, minutos, segundos)
-  const normalizeDate = (date: Date): string => {
-    const d = new Date(date);
-    // Formato YYYY-MM-DD para comparación directa de cadenas
-    return d.toISOString().split('T')[0];
-  };
   
   // Función para formatear fecha a YYYY-MM-DD
   const formatDateToYMD = (date: Date): string => {
@@ -410,14 +437,26 @@ export const useFirebaseTransactions = (): UseFirebaseTransactionsReturn => {
 
   const filteredTransactions = filterTransactionsByPeriod(transactions);
   
-  // Actualizar el resumen financiero cuando cambian las transacciones, el filtro o la tasa de cambio
+  // Actualizar el resumen financiero cuando cambian las transacciones o el filtro
   useEffect(() => {
     if (transactions.length > 0) {
-      const transactionsToUse = filterPeriod === FilterPeriod.ALL ? transactions : filteredTransactions;
-      const summary = calculateFinancialSummary(transactionsToUse, exchangeRate);
+      console.log('Actualizando resumen financiero...', {
+        totalTransacciones: transactions.length,
+        transaccionesFiltradas: filteredTransactions.length,
+        periodoFiltro: filterPeriod,
+        rangoPersonalizado: filterPeriod === FilterPeriod.CUSTOM ? customDateRange : null
+      });
+      
+      // Usar las transacciones filtradas según el período seleccionado
+      const transactionsToUse = filteredTransactions;
+      
+      // Calcular el resumen financiero con las transacciones filtradas
+      const summary = calculateFinancialSummary(transactionsToUse);
+      
+      console.log('Resumen financiero calculado:', summary);
       setFinancialSummary(summary);
     }
-  }, [transactions, filteredTransactions, filterPeriod, exchangeRate]);
+  }, [transactions, filteredTransactions, filterPeriod, customDateRange]);
 
   // Función para recargar los datos manualmente
   const refreshData = useCallback(async () => {

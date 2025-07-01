@@ -53,6 +53,15 @@ const SummaryCard: React.FC<SummaryCardProps> = ({ title, currency, periodIncome
 
 
 export const FinancialSummary: React.FC<{ summary: FinancialSummaryData }> = ({ summary }) => {
+  // Agregar logs de depuración
+  console.log('FinancialSummary - Resumen recibido:', summary);
+  
+  // Verificar si hay datos válidos
+  const hasData = summary.bs.totalBalance > 0 || summary.usd.totalBalance > 0;
+  
+  if (!hasData) {
+    console.warn('FinancialSummary - No hay datos financieros para mostrar');
+  }
   return (
     <div className="mb-8 grid md:grid-cols-2 gap-6">
       <SummaryCard

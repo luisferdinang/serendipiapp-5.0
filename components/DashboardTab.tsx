@@ -1,8 +1,9 @@
 
 import React, { useEffect, useRef, useState, useMemo } from 'react';
+import { AnalyzeButton } from './AnalyzeButton';
 import { Transaction, Currency, TransactionType, PaymentMethodOption, FinancialSummaryData, FilterPeriod, CustomDateRange } from '../types';
 import { FilterControls } from './FilterControls'; // Import FilterControls
-import { FILTER_PERIOD_OPTIONS, formatDateForInput, parseInputDate } from '../constants'; // Import constants for filters
+import { formatDateForInput, parseInputDate } from '../constants'; // Import constants for filters
 
 interface DashboardTabProps {
   allTransactions: Transaction[];
@@ -393,11 +394,20 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
       />
 
       {/* KPIs Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
         <KPICard title="Ingresos del Período (Dashboard)" value={formatCurrencyForDisplay(dashboardPeriodIncomeUSD)} icon={<IncomeIcon />} valueClassName="text-green-400" />
         <KPICard title="Gastos del Período (Dashboard)" value={formatCurrencyForDisplay(dashboardPeriodExpensesUSD)} icon={<ExpenseIcon />} valueClassName="text-red-400" />
         <KPICard title="Beneficio/Pérdida Neta (Dashboard)" value={formatCurrencyForDisplay(dashboardNetProfitLossUSD)} icon={<NetProfitIcon />} valueClassName={dashboardNetProfitLossUSD >= 0 ? "text-sky-400" : "text-orange-400"} />
         <KPICard title="Saldo Total Actual (Global)" value={formatCurrencyForDisplay(totalCombinedBalanceUSD)} icon={<BalanceIcon />} valueClassName="text-amber-400" />
+      </div>
+      
+      {/* Botón de Análisis con IA */}
+      <div className="flex justify-end mb-6">
+        <AnalyzeButton 
+          transactions={dashboardFilteredTransactions} 
+          disabled={dashboardFilteredTransactions.length === 0}
+          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2"
+        />
       </div>
 
       {/* Charts Row 1 */}
